@@ -1,0 +1,9 @@
+apiVersion: common.tumbler-doll.com/v1alpha1
+kind: TumblerDollOperator
+metadata:
+  labels:
+    app.kubernetes.io/name: src
+    app.kubernetes.io/managed-by: kustomize
+  name: tumblerdolloperator-sample
+spec:
+  # TODO(user): Add fields here

@@ -1,0 +1,23 @@
+# permissions for end users to view tumblerdolloperators.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: src
+    app.kubernetes.io/managed-by: kustomize
+  name: tumblerdolloperator-viewer-role
+rules:
+- apiGroups:
+  - common.tumbler-doll.com
+  resources:
+  - tumblerdolloperators
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - common.tumbler-doll.com
+  resources:
+  - tumblerdolloperators/status
+  verbs:
+  - get
