@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<title>Import CSV File</title>
+		
+		<link href="http://fonts.googleapis.com/css?family=PT+Sans+Narrow:400,700" rel="stylesheet" />
+		<link href="/css/style.css" rel="stylesheet" />
+		
+	</head>
+
+	<body>
+	
+		<form method="POST" action="/uploadfile" id="uploadfile" class="upload" enctype="multipart/form-data">
+			<div id="drop">
+				Import CSV file here
+				<input type="file" name="file" />
+			</div>
+			
+			<button type="submit" class="btn">Import File</button>
+
+			<ul id="uploadresult">
+			</ul>
+		</form>
+
+		<script src="/js/app.js"></script>
+		
+	</body>
+</html>

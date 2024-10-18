@@ -10,12 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	"github.com/jmoiron/sqlx"
-	cli "github.com/spf13/cobra"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	cli "github.com/spf13/cobra"
 )
 
 func init() {
@@ -23,7 +19,6 @@ func init() {
 }
 
 var (
-
 	wkflLauncherLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 	}))
@@ -91,51 +86,3 @@ var (
 		},
 	}
 )
-
-func newRouter() (chi.Router, error) {
-
-	router := chi.NewRouter()
-	router.Use(
-		middleware.Recoverer, // Recover from panics
-		middleware.RequestID, // Inject request-id
-	)
-
-	// Request logger
-	if config.Server.Log.Enabled {
-		// router.Use(logger.LoggerStandardMiddleware(log.Logger.With("context", "server"), loggerConfig))
-	}
-
-	// CORS handler
-	if config.Server.CORS.Enabled {
-		var corsOptions cors.Options
-		if err := koanfConfig.Unmarshal("server.cors", &corsOptions); err != nil {
-			return nil, fmt.Errorf("could not parser server.cors config: %w", err)
-		}
-		router.Use(cors.New(corsOptions).Handler)
-	}
-
-	return router, nil
-}
-
-func newDatabase() (*sqlx.DB, error) {
-
-	var err error
-	var db *sqlx.DB
-
-	// Create database
-	db, err = sqlx.Connect("pgx", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		config.Database.Username, config.Database.Password, config.Database.Host, config.Database.Port, config.Database.Database))
-	// db, err = sqlx.Connect("pgx", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-	// 	config.Database.Host, config.Database.Port, config.Database.Username, config.Database.Password, config.Database.Database))
-	if err != nil {
-		return nil, fmt.Errorf("database connection error: %w", err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("could not ping database %w", err)
-	}
-	db.SetMaxOpenConns(config.Database.MaxConnections)
-
-	return db, nil
-}

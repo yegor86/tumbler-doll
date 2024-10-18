@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -13,9 +12,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
 	cli "github.com/spf13/cobra"
-	_ "github.com/jackc/pgx/v4/stdlib"
+
+	"github.com/yegor86/tumbler-doll/internal/api/v1/handler"
 )
 
 func init() {
@@ -29,7 +30,6 @@ func init() {
 }
 
 var (
-
 	apiLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true, // Enables logging the file and line number
 	}))
@@ -60,22 +60,8 @@ var (
 				close(signalChannel)
 			}
 
-			// Version endpoint
-			router.Get("/version", func(w http.ResponseWriter, r *http.Request) {
-				v := struct {
-					Version string `json:"version"`
-				}{
-					Version: GitVersion,
-				}
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusOK)
-				_ = json.NewEncoder(w).Encode(v)
-			})
-
-			// MainRPC
-			// if err = mainrpc.Setup(router, db); err != nil {
-			// 	log.Fatalf("Could not setup mainrpc: %v", err)
-			// }
+			router.Get("/upload", handler.UploadForm)
+			router.Post("/uploadfile", handler.UploadFile)
 
 			// Create a server
 			s := http.Server{
