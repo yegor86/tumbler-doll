@@ -90,7 +90,7 @@ func Load() (*koanf.Koanf, *Config, error) {
 		return koanfConfig, config, nil
 	}
 
-	koanfConfig.Load(file.Provider("cmd/defaults.yaml"), yaml.Parser())
+	koanfConfig.Load(file.Provider("configs/defaults.yaml"), yaml.Parser())
 	if koanfConfig.Raw() == nil || len(koanfConfig.Raw()) == 0 {
 		return nil, nil, fmt.Errorf("could not load config: %s", "defaults.yaml")
 	}

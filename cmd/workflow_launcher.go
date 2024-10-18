@@ -19,25 +19,19 @@ import (
 )
 
 func init() {
-	// Parse defaults, config file and environment.
-	_, _, err := Load()
-	if err != nil {
-		Logger.Error(fmt.Sprintf("could not parse YAML config: %v", err))
-		os.Exit(1)
-	}
-	rootCmd.AddCommand(apiCmd)
+	rootCmd.AddCommand(workflowCmd)
 }
 
 var (
 
-	apiLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true, // Enables logging the file and line number
+	wkflLauncherLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
 	}))
 
-	apiCmd = &cli.Command{
-		Use:   "api",
-		Short: "Start API",
-		Long:  `Start API`,
+	workflowCmd = &cli.Command{
+		Use:   "wf",
+		Short: "Start Workflow",
+		Long:  `Start Workflow`,
 		Run: func(cmd *cli.Command, args []string) { // Initialize the databse
 
 			// Register signal handler and wait
