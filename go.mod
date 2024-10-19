@@ -12,6 +12,7 @@ require (
 	github.com/snowzach/golib v1.0.4
 	github.com/spf13/cobra v1.8.1
 	go.temporal.io/sdk v1.29.1
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (

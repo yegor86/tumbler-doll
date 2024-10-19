@@ -1,13 +1,18 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
+
+	"github.com/google/uuid"
+	"github.com/yegor86/tumbler-doll/internal/workflow"
+	wf_client "go.temporal.io/sdk/client"
+	"gopkg.in/yaml.v2"
 )
 
 // uploadForm serves the file upload form from an HTML template file
@@ -32,47 +37,52 @@ func UploadForm(w http.ResponseWriter, r *http.Request) {
 }
 
 // uploadFile handles the file upload
-func UploadFile(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
+func UploadFile(client wf_client.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+			return
+		}
 
-	// Parse the form data
-	err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
-	if err != nil {
-		http.Error(w, "Unable to parse form", http.StatusInternalServerError)
-		return
-	}
+		// Parse the form data
+		err := r.ParseMultipartForm(10 << 20) // Limit file size to 10MB
+		if err != nil {
+			http.Error(w, "Unable to parse form", http.StatusInternalServerError)
+			return
+		}
 
-	// Retrieve the file from form data
-	file, handler, err := r.FormFile("file")
-	if err != nil {
-		http.Error(w, "Unable to retrieve the file", http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
+		// Retrieve the file from form data
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "Unable to retrieve the file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
 
-	dirName := "/tmp/uploaded/"
-	err = os.Mkdir(dirName, 0755)
-	if err != nil {
-		log.Printf("Error creating directory: %v", err)
-		return
-	}
-	dst, err := os.Create(dirName + handler.Filename)
-	if err != nil {
-		http.Error(w, "Unable to create the file on server", http.StatusInternalServerError)
-		return
-	}
-	defer dst.Close()
+		// Read the content of the file into a byte array
+		data, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Error reading form data", http.StatusInternalServerError)
+			return
+		}
 
-	// Copy the uploaded file's content to the destination file
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		http.Error(w, "Unable to save the file", http.StatusInternalServerError)
-		return
-	}
+		var dslWorkflow workflow.Workflow
+		if err := yaml.Unmarshal(data, &dslWorkflow); err != nil {
+			http.Error(w, "Failed to unmarshal dsl config", http.StatusInternalServerError)
+			return
+		}
 
-	// Provide feedback to the user
-	fmt.Fprintf(w, "File uploaded successfully: %s", handler.Filename)
+		workflowOptions := wf_client.StartWorkflowOptions{
+			ID:        "dsl_" + uuid.New().String(),
+			TaskQueue: "dsl",
+		}
+		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.SimpleDSLWorkflow, dslWorkflow)
+		if err != nil {
+			log.Fatalln("Unable to execute workflow", err)
+		}
+
+		// Provide feedback to the user
+		log.Println("Started workflow", "WorkflowID", we.GetID(), "RunID", we.GetRunID())
+		fmt.Fprintf(w, "Started workflow: WorkflowID=%s, RunID=%s", we.GetID(), we.GetRunID())
+	}
 }

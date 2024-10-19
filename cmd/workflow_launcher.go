@@ -25,7 +25,7 @@ var (
 			// The client and worker are heavyweight objects that should be created once per process.
 			c, err := client.Dial(client.Options{})
 			if err != nil {
-				log.Fatalln("Unable to create client", err)
+				log.Fatalln("Unable to create Workflow client", err)
 			}
 			defer c.Close()
 

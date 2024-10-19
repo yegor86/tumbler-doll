@@ -16,15 +16,12 @@ import (
 	"github.com/jmoiron/sqlx"
 	cli "github.com/spf13/cobra"
 
+	wf_client "go.temporal.io/sdk/client"
+
 	"github.com/yegor86/tumbler-doll/internal/api/v1/handler"
 )
 
 func init() {
-	// Parse defaults, config file and environment.
-	_, _, err := Load()
-	if err != nil {
-		log.Fatalf(fmt.Sprintf("could not parse YAML config: %v", err))
-	}
 	rootCmd.AddCommand(apiCmd)
 }
 
@@ -34,29 +31,34 @@ var (
 		Short: "Start API",
 		Long:  `Start API`,
 		Run: func(cmd *cli.Command, args []string) { // Initialize the databse
+			var err error
 
 			// Register signal handler and wait
 			signalChannel := make(chan os.Signal, 1)
 			signal.Notify(signalChannel, []os.Signal{syscall.SIGINT, syscall.SIGTERM}...)
-			var err error
+
+			client, err := wf_client.Dial(wf_client.Options{})
+			if err != nil {
+				log.Fatalln("Unable to create Workflow client", err)
+			}
+			defer client.Close()
 
 			// Create the router and server config
 			router, err := newRouter()
 			if err != nil {
-				log.Printf("Router config error: %v", err)
-				close(signalChannel)
+				log.Fatalf("Router config error: %v", err)
 			}
 
 			// Create the database
 			// db, err := newDatabase()
 			_, err = newDatabase()
 			if err != nil {
-				log.Fatalf("database config error: %v", err)
-				close(signalChannel)
+				log.Fatalf("Database config error: %v", err)
 			}
 
+			
 			router.Get("/upload", handler.UploadForm)
-			router.Post("/uploadfile", handler.UploadFile)
+			router.Post("/uploadfile", handler.UploadFile(client))
 
 			// Create a server
 			s := http.Server{
@@ -68,7 +70,7 @@ var (
 			go func() {
 				if err = s.ListenAndServe(); err != nil {
 					close(signalChannel)
-					log.Fatalf(fmt.Sprintf("Server error: %v", err))
+					log.Fatalf("Server error: %v", err)
 				}
 			}()
 			log.Printf("API listening on %s", s.Addr)
