@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -17,16 +17,11 @@ func init() {
 	// Parse defaults, config file and environment.
 	_, _, err := Load()
 	if err != nil {
-		Logger.Error(fmt.Sprintf("could not parse YAML config: %v", err))
-		os.Exit(1)
+		log.Fatalf("could not parse YAML config: %v", err)
 	}
 }
 
 var (
-	Logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true, // Enables logging the file and line number
-	}))
-
 	pidFile string
 
 	// The Root Cli Handler
@@ -46,14 +41,14 @@ var (
 					r.HandleFunc("/debug/pprof/profile", pprof.Profile)
 					r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 					r.HandleFunc("/debug/pprof/trace", pprof.Trace)
-					Logger.Info("Profiler enabled", "profiler_path", fmt.Sprintf("http://%s/debug/pprof/", hostPort))
+					log.Printf("Profiler enabled, profiler_path = %s", fmt.Sprintf("http://%s/debug/pprof/", hostPort))
 				}
 				go func() {
 					if err := http.ListenAndServe(hostPort, r); err != nil {
-						Logger.Error(fmt.Sprintf("Metrics server error: %v", err))
+						log.Printf("Metrics server error: %v", err)
 					}
 				}()
-				Logger.Info("Metrics enabled", "address", hostPort)
+				log.Printf("Metrics enabled", "address", hostPort)
 			}
 
 			// Create Pid File

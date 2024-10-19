@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -23,17 +23,12 @@ func init() {
 	// Parse defaults, config file and environment.
 	_, _, err := Load()
 	if err != nil {
-		Logger.Error(fmt.Sprintf("could not parse YAML config: %v", err))
-		os.Exit(1)
+		log.Fatalf(fmt.Sprintf("could not parse YAML config: %v", err))
 	}
 	rootCmd.AddCommand(apiCmd)
 }
 
 var (
-	apiLogger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true, // Enables logging the file and line number
-	}))
-
 	apiCmd = &cli.Command{
 		Use:   "api",
 		Short: "Start API",
@@ -48,7 +43,7 @@ var (
 			// Create the router and server config
 			router, err := newRouter()
 			if err != nil {
-				apiLogger.Error("router config error: %v", err)
+				log.Printf("Router config error: %v", err)
 				close(signalChannel)
 			}
 
@@ -56,7 +51,7 @@ var (
 			// db, err := newDatabase()
 			_, err = newDatabase()
 			if err != nil {
-				apiLogger.Error("database config error: %v", err)
+				log.Fatalf("database config error: %v", err)
 				close(signalChannel)
 			}
 
@@ -72,12 +67,11 @@ var (
 			// Start the listener and service connections.
 			go func() {
 				if err = s.ListenAndServe(); err != nil {
-					slog.Error(fmt.Sprintf("Server error: %v", err))
-
 					close(signalChannel)
+					log.Fatalf(fmt.Sprintf("Server error: %v", err))
 				}
 			}()
-			slog.Info(fmt.Sprintf("API listening on %s"), s.Addr)
+			log.Printf("API listening on %s", s.Addr)
 
 			<-signalChannel
 		},

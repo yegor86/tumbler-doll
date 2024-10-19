@@ -5,7 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "tumbpler-doll",
+            "name": "Tumbpler Workflow",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "main.go",
+            "args": [
+                "wf"
+            ]
+        },
+        {
+            "name": "Tumbpler API",
             "type": "go",
             "request": "launch",
             "mode": "auto",

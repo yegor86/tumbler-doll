@@ -56,7 +56,7 @@ func UploadFile(w http.ResponseWriter, r *http.Request) {
 	dirName := "/tmp/uploaded/"
 	err = os.Mkdir(dirName, 0755)
 	if err != nil {
-		fmt.Println("Error creating directory:", err)
+		log.Printf("Error creating directory: %v", err)
 		return
 	}
 	dst, err := os.Create(dirName + handler.Filename)
