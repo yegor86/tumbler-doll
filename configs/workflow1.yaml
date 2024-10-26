@@ -18,21 +18,29 @@ root:
   sequence:
     elements:
       - activity:
-         name: SampleActivity1
+         name: SampleActivity
          arguments:
            - arg1
          result: result1
+         commands:
+          - dd if=/dev/zero of=/tmp/activity1.img bs=1M count=10
+          - ls -la /tmp/activity1.img
+          - echo "Argument1 $arg1"
       - parallel:
           branches:
             - sequence:
                 elements:
                  - activity:
-                    name: SampleActivity2
+                    name: SampleActivity
                     arguments:
                       - result1
                     result: result2
+                    commands:
+                      - dd if=/dev/zero of=/tmp/activity2.img bs=1M count=10
+                      - ls -la /tmp/activity2.img
+                      - echo "Hello"
                  - activity:
-                    name: SampleActivity3
+                    name: SampleActivity
                     arguments:
                       - arg2
                       - result2
@@ -40,18 +48,18 @@ root:
             - sequence:
                 elements:
                  - activity:
-                    name: SampleActivity4
+                    name: SampleActivity
                     arguments:
                       - result1
                     result: result4
                  - activity:
-                    name: SampleActivity5
+                    name: SampleActivity
                     arguments:
                       - arg3
                       - result4
                     result: result5
       - activity:
-         name: SampleActivity1
+         name: SampleActivity
          arguments:
            - result3
            - result5

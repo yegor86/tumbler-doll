@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"strings"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -39,6 +40,7 @@ type (
 		Name      string
 		Arguments []string
 		Result    string
+		Commands  []string
 	}
 
 	executable interface {
@@ -93,7 +95,7 @@ func (b *Statement) execute(ctx workflow.Context, bindings map[string]string) er
 }
 
 func (a ActivityInvocation) execute(ctx workflow.Context, bindings map[string]string) error {
-	inputParam := makeInput(a.Arguments, bindings)
+	inputParam := makeInput(a.Commands, a.Arguments, bindings)
 	var result string
 	err := workflow.ExecuteActivity(ctx, a.Name, inputParam).Get(ctx, &result)
 	if err != nil {
@@ -157,10 +159,13 @@ func executeAsync(exe executable, ctx workflow.Context, bindings map[string]stri
 	return future
 }
 
-func makeInput(argNames []string, argsMap map[string]string) []string {
-	var args []string
-	for _, arg := range argNames {
-		args = append(args, argsMap[arg])
+func makeInput(commands []string, argNames []string, argsMap map[string]string) []string {
+	var results []string
+	for _, command := range commands {
+		for _, arg := range argNames {
+			command = strings.ReplaceAll(command, "$" + arg, argsMap[arg])
+		}
+		results = append(results, command)
 	}
-	return args
+	return results
 }
