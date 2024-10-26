@@ -29,7 +29,7 @@ var (
 			}
 			defer c.Close()
 
-			w := worker.New(c, "main_worker", worker.Options{})
+			w := worker.New(c, "dsl", worker.Options{})
 
 			w.RegisterWorkflow(workflow.SimpleDSLWorkflow)
 			w.RegisterActivity(&workflow.SampleActivities{})
