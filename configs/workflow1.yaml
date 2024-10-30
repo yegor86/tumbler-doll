@@ -22,6 +22,7 @@ root:
          arguments:
            - arg1
          result: result1
+         container_image: "ubuntu:24.10"
          commands:
           - dd if=/dev/zero of=/tmp/activity1.img bs=1M count=10
           - ls -la /tmp/activity1.img

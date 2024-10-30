@@ -37,10 +37,11 @@ type (
 	// the Activity, the result specify the name of variable that it will store the result as which can then be used as
 	// arguments to subsequent ActivityInvocation.
 	ActivityInvocation struct {
-		Name      string
-		Arguments []string
-		Result    string
-		Commands  []string
+		Name           string
+		Arguments      []string
+		Result         string
+		Commands       []string
+		ContainerImage string `yaml:"container_image"`
 	}
 
 	executable interface {
@@ -97,7 +98,13 @@ func (b *Statement) execute(ctx workflow.Context, bindings map[string]string) er
 func (a ActivityInvocation) execute(ctx workflow.Context, bindings map[string]string) error {
 	inputParam := makeInput(a.Commands, a.Arguments, bindings)
 	var result string
-	err := workflow.ExecuteActivity(ctx, a.Name, inputParam).Get(ctx, &result)
+	
+	ao := workflow.ActivityOptions{
+        StartToCloseTimeout: time.Minute * 5, // Adjust the timeout as needed
+    }
+	ctx = workflow.WithActivityOptions(ctx, ao)
+
+	err := workflow.ExecuteActivity(ctx, a.Name, inputParam, a.ContainerImage).Get(ctx, &result)
 	if err != nil {
 		return err
 	}
@@ -163,7 +170,7 @@ func makeInput(commands []string, argNames []string, argsMap map[string]string) 
 	var results []string
 	for _, command := range commands {
 		for _, arg := range argNames {
-			command = strings.ReplaceAll(command, "$" + arg, argsMap[arg])
+			command = strings.ReplaceAll(command, "$"+arg, argsMap[arg])
 		}
 		results = append(results, command)
 	}
