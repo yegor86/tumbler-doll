@@ -45,17 +45,18 @@ type (
 	}
 
 	executable interface {
-		execute(ctx workflow.Context, bindings map[string]string) error
+		execute(ctx workflow.Context, variables map[string]string, results map[string]any) error
 	}
 )
 
 // SimpleDSLWorkflow workflow definition
 func SimpleDSLWorkflow(ctx workflow.Context, dslWorkflow Workflow) ([]byte, error) {
-	bindings := make(map[string]string)
+	variables := make(map[string]string)
 	//workflowcheck:ignore Only iterates for building another map
 	for k, v := range dslWorkflow.Variables {
-		bindings[k] = v
+		variables[k] = v
 	}
+	results := make(map[string]any)
 
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
@@ -63,7 +64,7 @@ func SimpleDSLWorkflow(ctx workflow.Context, dslWorkflow Workflow) ([]byte, erro
 	ctx = workflow.WithActivityOptions(ctx, ao)
 	logger := workflow.GetLogger(ctx)
 
-	err := dslWorkflow.Root.execute(ctx, bindings)
+	err := dslWorkflow.Root.execute(ctx, variables, results)
 	if err != nil {
 		logger.Error("DSL Workflow failed.", "Error", err)
 		return nil, err
@@ -73,21 +74,21 @@ func SimpleDSLWorkflow(ctx workflow.Context, dslWorkflow Workflow) ([]byte, erro
 	return nil, err
 }
 
-func (b *Statement) execute(ctx workflow.Context, bindings map[string]string) error {
+func (b *Statement) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {
 	if b.Parallel != nil {
-		err := b.Parallel.execute(ctx, bindings)
+		err := b.Parallel.execute(ctx, variables, results)
 		if err != nil {
 			return err
 		}
 	}
 	if b.Sequence != nil {
-		err := b.Sequence.execute(ctx, bindings)
+		err := b.Sequence.execute(ctx, variables, results)
 		if err != nil {
 			return err
 		}
 	}
 	if b.Activity != nil {
-		err := b.Activity.execute(ctx, bindings)
+		err := b.Activity.execute(ctx, variables, results)
 		if err != nil {
 			return err
 		}
@@ -95,9 +96,9 @@ func (b *Statement) execute(ctx workflow.Context, bindings map[string]string) er
 	return nil
 }
 
-func (a ActivityInvocation) execute(ctx workflow.Context, bindings map[string]string) error {
-	inputParam := makeInput(a.Commands, a.Arguments, bindings)
-	var result string
+func (a ActivityInvocation) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {
+	inputParam := makeInput(a.Commands, a.Arguments, variables)
+	var result []string
 	
 	ao := workflow.ActivityOptions{
         StartToCloseTimeout: time.Minute * 5, // Adjust the timeout as needed
@@ -109,14 +110,14 @@ func (a ActivityInvocation) execute(ctx workflow.Context, bindings map[string]st
 		return err
 	}
 	if a.Result != "" {
-		bindings[a.Result] = result
+		results[a.Result] = result
 	}
 	return nil
 }
 
-func (s Sequence) execute(ctx workflow.Context, bindings map[string]string) error {
+func (s Sequence) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {
 	for _, a := range s.Elements {
-		err := a.execute(ctx, bindings)
+		err := a.execute(ctx, variables, results)
 		if err != nil {
 			return err
 		}
@@ -124,7 +125,7 @@ func (s Sequence) execute(ctx workflow.Context, bindings map[string]string) erro
 	return nil
 }
 
-func (p Parallel) execute(ctx workflow.Context, bindings map[string]string) error {
+func (p Parallel) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {
 	//
 	// You can use the context passed in to activity as a way to cancel the activity like standard GO way.
 	// Cancelling a parent context will cancel all the derived contexts as well.
@@ -136,7 +137,7 @@ func (p Parallel) execute(ctx workflow.Context, bindings map[string]string) erro
 	selector := workflow.NewSelector(ctx)
 	var activityErr error
 	for _, s := range p.Branches {
-		f := executeAsync(s, childCtx, bindings)
+		f := executeAsync(s, childCtx, variables, results)
 		selector.AddFuture(f, func(f workflow.Future) {
 			err := f.Get(ctx, nil)
 			if err != nil {
@@ -157,10 +158,10 @@ func (p Parallel) execute(ctx workflow.Context, bindings map[string]string) erro
 	return nil
 }
 
-func executeAsync(exe executable, ctx workflow.Context, bindings map[string]string) workflow.Future {
+func executeAsync(exe executable, ctx workflow.Context, variables map[string]string, results map[string]any) workflow.Future {
 	future, settable := workflow.NewFuture(ctx)
 	workflow.Go(ctx, func(ctx workflow.Context) {
-		err := exe.execute(ctx, bindings)
+		err := exe.execute(ctx, variables, results)
 		settable.Set(nil, err)
 	})
 	return future
