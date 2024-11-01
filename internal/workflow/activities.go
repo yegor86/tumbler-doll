@@ -41,8 +41,6 @@ func (a *SampleActivities) SampleActivity(ctx context.Context, commands []string
 
 // DockerActivity starts a Docker container with a specified image
 func DockerActivity(ctx context.Context, imageName string, commands []string) ([]string, error) {
-	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-    // defer cancel()
 
 	// Create a Docker client
 	cli, err := docker_client.NewClientWithOpts(docker_client.FromEnv, docker_client.WithVersion("1.46"))

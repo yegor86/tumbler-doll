@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/yegor86/tumbler-doll/internal/workflow"
 	wf_client "go.temporal.io/sdk/client"
-	"gopkg.in/yaml.v2"
+	"github.com/yegor86/tumbler-doll/internal/workflow"
+	"github.com/yegor86/tumbler-doll/internal/dsl"
 )
 
 // uploadForm serves the file upload form from an HTML template file
@@ -51,8 +51,8 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			return
 		}
 
-		// Retrieve the file from form data
-		file, _, err := r.FormFile("file")
+		// Retrieve the file from data
+		file, file_header, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, "Unable to retrieve the file", http.StatusInternalServerError)
 			return
@@ -66,9 +66,16 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			return
 		}
 
-		var dslWorkflow workflow.Workflow
-		if err := yaml.Unmarshal(data, &dslWorkflow); err != nil {
-			http.Error(w, "Failed to unmarshal dsl config", http.StatusInternalServerError)
+		// var dslWorkflow workflow.Workflow
+		// if err := yaml.Unmarshal(data, &dslWorkflow); err != nil {
+		// 	http.Error(w, "Failed to unmarshal dsl config", http.StatusInternalServerError)
+		// 	return
+		// }
+		var dslParser dsl.DslParser;
+		pipeline, err := dslParser.Parse(string(data))
+		if err != nil {
+			http.Error(w, "Error reading file", http.StatusInternalServerError)
+			log.Printf("Error reading file %v", file_header.Filename)
 			return
 		}
 
@@ -76,7 +83,7 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			ID:        "dsl_" + uuid.New().String(),
 			TaskQueue: "dsl",
 		}
-		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.SimpleDSLWorkflow, dslWorkflow)
+		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, pipeline)
 		if err != nil {
 			log.Fatalln("Unable to execute workflow", err)
 		}
