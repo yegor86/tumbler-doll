@@ -5,53 +5,25 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/yegor86/tumbler-doll/internal/workflow"
+)
+
+type (
+	DslParser struct{}
 )
 
 // Define the lexer rules for Jenkinsfile syntax
 var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
-	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|image|stages|stage|steps|sh|echo|none)\b`},
-	{Name: "String", Pattern: `'(.*?)'`},
+	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|stages|stage|steps|sh|echo|none|failFast)\b`},
+	{Name: "String", Pattern: `'(.*?)'|"(.*?)"`},
+	{Name: "Bool", Pattern: `true|false`},
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Punctuation", Pattern: `[{}()]`},
 	{Name: "whitespace", Pattern: `\s+`},
 })
 
-type (
-	DslParser struct{}
-
-	// Pipeline represents the main Jenkins pipeline structure
-	Pipeline struct {
-		Agent  *Agent   `"pipeline" "{" "agent" ("none" | "{" @@ "}")`
-		Stages []*Stage `"stages" "{" @@+ "}"`
-		Close  string   `"}"`
-	}
-
-	// Agent represents the agent block in a Jenkinsfile
-	Agent struct {
-		Docker *Docker `"docker" ("{" @@ "}") | "docker" @@`
-	}
-
-	// Docker represents the Docker configuration within an agent
-	Docker struct {
-		Image string `"image" @String | @String`
-	}
-
-	// Stage represents a stage block within stages
-	Stage struct {
-		Name  string  `"stage" "(" @String ")" "{"`
-		Agent *Agent  `"agent" ("none" | "{" @@ "}")`
-		Steps []*Step `"steps" "{" @@+ "}"`
-		Close string  `"}"`
-	}
-
-	// Step represents individual steps within a stage
-	Step struct {
-		Command string `"sh" @String | @String`
-	}
-)
-
-func (*DslParser) Parse(dslFile string) (*Pipeline, error) {
-	parser := participle.MustBuild[Pipeline](
+func (*DslParser) Parse(dslFile string) (*workflow.Pipeline, error) {
+	parser := participle.MustBuild[workflow.Pipeline](
 		participle.Lexer(lexerRules),
 	)
 

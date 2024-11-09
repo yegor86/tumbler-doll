@@ -31,7 +31,7 @@ var (
 
 			w := worker.New(c, "dsl", worker.Options{})
 
-			w.RegisterWorkflow(workflow.SimpleDSLWorkflow)
+			w.RegisterWorkflow(workflow.GroovyDSLWorkflow)
 			w.RegisterActivity(&workflow.SampleActivities{})
 
 			err = w.Run(worker.InterruptCh())
