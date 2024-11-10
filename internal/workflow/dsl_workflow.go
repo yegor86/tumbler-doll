@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"strings"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -23,9 +24,9 @@ type (
 	Docker struct {
 		Image string `@String`
 	}
-	
+
 	Parallel []*Stage
-	
+
 	// Stage represents a stage block within stages
 	Stage struct {
 		Name     string   `"stage" "(" @String ")" "{"`
@@ -47,6 +48,12 @@ type (
 	}
 )
 
+// Capture method strips quotes from the Image field
+func (d *Docker) Capture(value string) error {
+    d.Image = strings.Trim(value, `"'`)
+    return nil
+}
+
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) ([]byte, error) {
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
@@ -54,13 +61,12 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) ([]byte, error) 
 	ctx = workflow.WithActivityOptions(ctx, ao)
 	logger := workflow.GetLogger(ctx)
 
-
 	variables := make(map[string]string)
 	results := make(map[string]any)
 	for _, stage := range pipeline.Stages {
 		stage.execute(ctx, variables, results)
 	}
-	
+
 	logger.Info("Grrovy Workflow completed.")
 	return nil, nil
 }
@@ -72,7 +78,7 @@ func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, r
 			return err
 		}
 	}
-	
+
 	if err := stage.executeSteps(ctx, variables, results); err != nil {
 		return err
 	}
@@ -84,13 +90,13 @@ func (stage *Stage) executeSteps(ctx workflow.Context, variables map[string]stri
 		return nil
 	}
 	var result []string
-	
+
 	ao := workflow.ActivityOptions{
-        StartToCloseTimeout: time.Minute * 5, // Adjust the timeout as needed
-    }
+		StartToCloseTimeout: time.Minute * 5, // Adjust the timeout as needed
+	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
-	err := workflow.ExecuteActivity(ctx, "StepsActivity", stage.Steps, stage.Agent).Get(ctx, &result)
+	err := workflow.ExecuteActivity(ctx, "StageActivity", stage.Steps, stage.Agent).Get(ctx, &result)
 	if err != nil {
 		return err
 	}
@@ -138,4 +144,13 @@ func executeAsync(exe executable, ctx workflow.Context, variables map[string]str
 		settable.Set(nil, err)
 	})
 	return future
+}
+
+func (step *Step) toCommand() []string {
+	if step.Sh != nil {
+		return []string{"sh", "-c", *step.Sh}
+	} else if step.Echo != nil {
+		return []string{"echo", *step.Echo}
+	}
+	return []string{}
 }

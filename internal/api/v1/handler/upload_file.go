@@ -83,7 +83,7 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			ID:        "dsl_" + uuid.New().String(),
 			TaskQueue: "dsl",
 		}
-		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, pipeline)
+		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
 		if err != nil {
 			log.Fatalln("Unable to execute workflow", err)
 		}

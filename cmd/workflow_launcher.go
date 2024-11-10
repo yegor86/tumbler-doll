@@ -32,7 +32,7 @@ var (
 			w := worker.New(c, "dsl", worker.Options{})
 
 			w.RegisterWorkflow(workflow.GroovyDSLWorkflow)
-			w.RegisterActivity(&workflow.SampleActivities{})
+			w.RegisterActivity(&workflow.StageActivities{})
 
 			err = w.Run(worker.InterruptCh())
 			if err != nil {

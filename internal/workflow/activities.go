@@ -9,25 +9,25 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/api/types/strslice"
 	docker_client "github.com/docker/docker/client"
 	"go.temporal.io/sdk/activity"
 )
 
-type SampleActivities struct {
+type StageActivities struct {
 }
 
-func (a *SampleActivities) SampleActivity(ctx context.Context, commands []string, containerImage string) ([]string, error) {
+func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agent Agent) ([]string, error) {
 	name := activity.GetInfo(ctx).ActivityType.Name
-	fmt.Printf("Run %s with command %v \n", name, commands)
+	fmt.Printf("Run %s...\n", name)
 	
-	if containerImage != "" {
-		return DockerActivity(ctx, containerImage, commands)
+	if agent.Docker != nil && agent.Docker.Image != "" {
+		return DockerActivity(ctx, agent.Docker.Image, steps)
 	}
 
 	var results []string
-	for _, command := range commands {
-		cmd := exec.Command("bash", "-c", command)
+	for _, step := range steps {
+		terms := step.toCommand()
+		cmd := exec.Command(terms[0], terms[1:]...)
 		output, err := cmd.Output()
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
@@ -40,7 +40,7 @@ func (a *SampleActivities) SampleActivity(ctx context.Context, commands []string
 }
 
 // DockerActivity starts a Docker container with a specified image
-func DockerActivity(ctx context.Context, imageName string, commands []string) ([]string, error) {
+func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]string, error) {
 
 	// Create a Docker client
 	cli, err := docker_client.NewClientWithOpts(docker_client.FromEnv, docker_client.WithVersion("1.46"))
@@ -75,7 +75,7 @@ func DockerActivity(ctx context.Context, imageName string, commands []string) ([
 	results := []string{}
 	for _, cmd := range commands {
 		execResp, err := cli.ContainerExecCreate(ctx, containerID, container.ExecOptions{
-			Cmd:          strslice.StrSlice{"sh", "-c", cmd},
+			Cmd:          cmd.toCommand(),
 			AttachStdout: true,
 			AttachStderr: true,
 		})
