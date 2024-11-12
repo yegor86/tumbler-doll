@@ -22,7 +22,7 @@ type (
 	}
 
 	Docker struct {
-		Image string `@String`
+		Image QuotedString `@String`
 	}
 
 	Parallel []*Stage
@@ -48,9 +48,11 @@ type (
 	}
 )
 
+type QuotedString string
+
 // Capture method strips quotes from the Image field
-func (d *Docker) Capture(value string) error {
-    d.Image = strings.Trim(value, `"'`)
+func (o *QuotedString) Capture(values []string) error {
+	*o = QuotedString(strings.Trim(values[0], `"'`))
     return nil
 }
 

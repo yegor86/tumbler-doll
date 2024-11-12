@@ -21,7 +21,7 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 	fmt.Printf("Run %s...\n", name)
 	
 	if agent.Docker != nil && agent.Docker.Image != "" {
-		return DockerActivity(ctx, agent.Docker.Image, steps)
+		return DockerActivity(ctx, string(agent.Docker.Image), steps)
 	}
 
 	var results []string
