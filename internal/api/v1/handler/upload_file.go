@@ -85,7 +85,9 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 		}
 		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
 		if err != nil {
-			log.Fatalln("Unable to execute workflow", err)
+			http.Error(w, "Error executing workflow", http.StatusInternalServerError)
+			log.Printf("Unable to execute workflow %v", err)
+			return
 		}
 
 		// Provide feedback to the user

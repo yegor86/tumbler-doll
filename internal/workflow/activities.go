@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -50,7 +51,7 @@ func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]
 	defer cli.Close()
 
 	// Pull the image (if not present locally)
-	_, err = cli.ImagePull(ctx, imageName, image.PullOptions{})
+	_, err = cli.ImagePull(ctx, buildImageWithTag(imageName), image.PullOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to pull Docker image: %w", err)
 	}
@@ -106,4 +107,12 @@ func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]
 	}
 
 	return results, nil
+}
+
+func buildImageWithTag(imageName string) string {
+	imageTag := strings.Split(imageName, ":")
+	if len(imageTag) > 1 {
+		return imageTag[0] + ":" + imageTag[1]
+	}
+	return imageTag[0] + ":" + "latest"
 }

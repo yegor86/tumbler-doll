@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/workflow"
+	"go.temporal.io/sdk/temporal"
 )
 
 type (
@@ -57,16 +58,14 @@ func (o *QuotedString) Capture(values []string) error {
 }
 
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) ([]byte, error) {
-	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 10 * time.Second,
-	}
-	ctx = workflow.WithActivityOptions(ctx, ao)
 	logger := workflow.GetLogger(ctx)
 
 	variables := make(map[string]string)
 	results := make(map[string]any)
 	for _, stage := range pipeline.Stages {
-		stage.execute(ctx, variables, results)
+		if err := stage.execute(ctx, variables, results); err != nil {
+			return nil, err
+		}
 	}
 
 	logger.Info("Grrovy Workflow completed.")
@@ -94,7 +93,10 @@ func (stage *Stage) executeSteps(ctx workflow.Context, variables map[string]stri
 	var result []string
 
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: time.Minute * 5, // Adjust the timeout as needed
+		StartToCloseTimeout: time.Minute * 5,
+		RetryPolicy: &temporal.RetryPolicy{
+            MaximumAttempts: 3,  
+        },
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
