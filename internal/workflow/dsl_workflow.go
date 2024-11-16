@@ -40,8 +40,8 @@ type (
 
 	// Step represents individual steps within a stage
 	Step struct {
-		Echo *string `"echo" @String |`
-		Sh   *string `"sh" @String`
+		Echo *QuotedString `"echo" @String |`
+		Sh   *QuotedString `"sh" @String`
 	}
 
 	executable interface {
@@ -51,9 +51,9 @@ type (
 
 func (step *Step) Name() string {
 	if step.Echo != nil {
-		return *step.Echo
+		return string(*step.Echo)
 	} else if step.Sh != nil {
-		return *step.Sh
+		return string(*step.Sh)
 	}
 	return "Unknown"
 }
@@ -83,10 +83,12 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any,
 
 func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {
 	if len(stage.Parallel) > 0 {
-		err := stage.Parallel.execute(ctx, variables, results)
+		parallelResults := make(map[string]any)
+		err := stage.Parallel.execute(ctx, variables, parallelResults)
 		if err != nil {
 			return err
 		}
+		results[stage.Name] = parallelResults
 	}
 
 	if err := stage.executeSteps(ctx, variables, results); err != nil {
@@ -160,10 +162,8 @@ func executeAsync(exe executable, ctx workflow.Context, variables map[string]str
 }
 
 func (step *Step) toCommand() []string {
-	if step.Sh != nil {
-		return []string{"sh", "-c", *step.Sh}
-	} else if step.Echo != nil {
-		return []string{"echo", *step.Echo}
+	if step.Echo != nil {
+		return []string{"echo", string(*step.Echo)}
 	}
-	return []string{}
+	return strings.Fields(string(*step.Sh))
 }
