@@ -48,7 +48,7 @@ var (
 						log.Printf("Metrics server error: %v", err)
 					}
 				}()
-				log.Printf("Metrics enabled", "address", hostPort)
+				log.Printf("Metrics enabled for address: %s", hostPort)
 			}
 
 			// Create Pid File

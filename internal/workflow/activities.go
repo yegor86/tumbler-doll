@@ -82,19 +82,19 @@ func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]
 			AttachStderr: true,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("failed to create exec instance for command '%s': %w", cmd, err)
+			return nil, fmt.Errorf("failed to create exec instance for command '%v': %w", cmd, err)
 		}
 
 		// Start the command execution
 		execStartResp, err := cli.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("failed to start exec instance for command '%s': %w", cmd, err)
+			return nil, fmt.Errorf("failed to start exec instance for command '%v': %w", cmd, err)
 		}
 
 		// Capture the output
 		output, err := io.ReadAll(execStartResp.Reader)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read output for command '%s': %w", cmd, err)
+			return nil, fmt.Errorf("failed to read output for command '%v': %w", cmd, err)
 		}
 		results = append(results, string(output))
 	}

@@ -4,15 +4,15 @@ import (
 	"strings"
 	"time"
 
-	"go.temporal.io/sdk/workflow"
 	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 )
 
 type (
 	// Pipeline represents the main Jenkins pipeline structure
 	Pipeline struct {
-		Agent  *Agent   `"pipeline" "{" "agent" @@`
-		Stages []*Stage `"stages" "{" @@+ "}"`
+		Agent  *Agent   `"pipeline" "{" "agent" @@` //nolint:structcheck
+		Stages []*Stage `"stages" "{" @@+ "}"`      //nolint:structcheck
 		Close  string   `"}"`
 	}
 
@@ -63,7 +63,7 @@ type QuotedString string
 // Capture method strips quotes from the Image field
 func (o *QuotedString) Capture(values []string) error {
 	*o = QuotedString(strings.Trim(values[0], `"'`))
-    return nil
+	return nil
 }
 
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
@@ -104,8 +104,8 @@ func (stage *Stage) executeSteps(ctx workflow.Context, variables map[string]stri
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Minute * 5,
 		RetryPolicy: &temporal.RetryPolicy{
-            MaximumAttempts: 3,  
-        },
+			MaximumAttempts: 3,
+		},
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 
