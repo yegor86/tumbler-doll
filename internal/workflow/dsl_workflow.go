@@ -49,6 +49,15 @@ type (
 	}
 )
 
+func (step *Step) Name() string {
+	if step.Echo != nil {
+		return *step.Echo
+	} else if step.Sh != nil {
+		return *step.Sh
+	}
+	return "Unknown"
+}
+
 type QuotedString string
 
 // Capture method strips quotes from the Image field
@@ -57,7 +66,7 @@ func (o *QuotedString) Capture(values []string) error {
     return nil
 }
 
-func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) ([]byte, error) {
+func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
 	logger := workflow.GetLogger(ctx)
 
 	variables := make(map[string]string)
@@ -69,7 +78,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) ([]byte, error) 
 	}
 
 	logger.Info("Grrovy Workflow completed.")
-	return nil, nil
+	return results, nil
 }
 
 func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {

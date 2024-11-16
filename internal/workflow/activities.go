@@ -11,29 +11,30 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	docker_client "github.com/docker/docker/client"
-	"go.temporal.io/sdk/activity"
 )
 
 type StageActivities struct {
 }
 
 func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agent Agent) ([]string, error) {
-	name := activity.GetInfo(ctx).ActivityType.Name
-	fmt.Printf("Run %s...\n", name)
+	// name := activity.GetInfo(ctx).ActivityType.Name
+	// fmt.Printf("Run %s...\n", name)
 	
 	if agent.Docker != nil && agent.Docker.Image != "" {
 		return DockerActivity(ctx, string(agent.Docker.Image), steps)
 	}
-
+	
 	var results []string
 	for _, step := range steps {
 		terms := step.toCommand()
+		fmt.Printf("Run %s with command %v \n", step.Name(), terms)
 		cmd := exec.Command(terms[0], terms[1:]...)
 		output, err := cmd.Output()
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
 			return results, err
 		}
+		results = append(results, string(output))
 		fmt.Printf("Command Output: %s\n", output)
 	}
 
