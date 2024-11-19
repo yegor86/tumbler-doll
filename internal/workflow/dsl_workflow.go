@@ -11,8 +11,8 @@ import (
 type (
 	// Pipeline represents the main Jenkins pipeline structure
 	Pipeline struct {
-		Agent  *Agent   `"pipeline" "{" "agent" @@` //nolint:structcheck
-		Stages []*Stage `"stages" "{" @@+ "}"`      //nolint:structcheck
+		Agent  *Agent   `"pipeline" "{" "agent" @@`
+		Stages []*Stage `"stages" "{" @@+ "}"`
 		Close  string   `"}"`
 	}
 

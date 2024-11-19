@@ -12,6 +12,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/image"
 	dockerClient "github.com/docker/docker/client"
 )
 
@@ -54,10 +55,13 @@ func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]
 	defer docker.Close()
 
 	// Pull the image (if not present locally)
-	// _, err = docker.ImagePull(ctx, buildImageWithTag(imageName), image.PullOptions{})
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to pull Docker image: %w", err)
-	// }
+	pullOut, err := docker.ImagePull(ctx, buildImageWithTag(imageName), image.PullOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to pull Docker image: %w", err)
+	}
+	defer pullOut.Close()
+	// todo: Stream docker pull output on to the progress view
+	io.Copy(io.Discard, pullOut)
 
 	// Create the container
 	resp, err := docker.ContainerCreate(ctx, &container.Config{

@@ -1,4 +1,5 @@
-linters:
-  disable:
-    - structcheck
-    - structtag
+linters-settings:
+  staticcheck:
+    checks:
+      disable:
+        - SA5001 # Example: disable specific rule
