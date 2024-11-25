@@ -1,7 +1,7 @@
 package scm
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -10,8 +10,9 @@ import (
 	"github.com/yegor86/tumbler-doll/plugins/scm/shared"
 )
 
-type ScmClint struct {
-	scm shared.Scm
+type ScmPlugin struct {
+	scm    shared.Scm
+	client *plugin.Client
 }
 
 var handshakeConfig = plugin.HandshakeConfig{
@@ -25,37 +26,45 @@ var pluginMap = map[string]plugin.Plugin{
 	"checkout": &shared.ScmPlugin{},
 }
 
-func NewScmClient() *shared.ScmRPCClient {
+func (p *ScmPlugin) Start() error {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Output: os.Stdout,
 		Level:  hclog.Debug,
 	})
 
-	os.Setenv(handshakeConfig.MagicCookieKey, handshakeConfig.MagicCookieValue)
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
 		Cmd:             exec.Command("plugins/scm/scm"),
 		Logger:          logger,
 	})
-	defer client.Kill()
 
 	// Connect via RPC
 	rpcClient, err := client.Client()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Request the plugin
 	raw, err := rpcClient.Dispense("checkout")
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
-	return raw.(*shared.ScmRPCClient)
+	p.scm = raw.(shared.Scm)
+	p.client = client
+	return nil
 }
 
-func (scmClient *ScmClint) Checkout(args shared.CheckoutArgs) string {
+func (p *ScmPlugin) Stop() error {
+	if p.client == nil {
+		return fmt.Errorf("Scm plugin is not initialized")
+	}
+	p.client.Kill()
+	return nil
+}
+
+func (scmClient *ScmPlugin) Checkout(args shared.CheckoutArgs) string {
 	return scmClient.scm.Checkout(args)
 }
