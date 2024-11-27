@@ -4,3 +4,4 @@
 3. plugin based system for UI
 4. CI queue
 5. Stream docker pull output on to the progress view
+6. plugin process is not killed
