@@ -30,7 +30,7 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 	var results []string
 	for _, step := range steps {
 		terms := step.toCommand()
-		fmt.Printf("Run %s with command %v \n", step.Name(), terms)
+		// fmt.Printf("Run %s with command %v \n", step.Name(), terms)
 		cmd := exec.Command(terms[0], terms[1:]...)
 		output, err := cmd.Output()
 		if err != nil {

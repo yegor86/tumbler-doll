@@ -66,11 +66,6 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			return
 		}
 
-		// var dslWorkflow workflow.Workflow
-		// if err := yaml.Unmarshal(data, &dslWorkflow); err != nil {
-		// 	http.Error(w, "Failed to unmarshal dsl config", http.StatusInternalServerError)
-		// 	return
-		// }
 		var dslParser dsl.DslParser;
 		pipeline, err := dslParser.Parse(string(data))
 		if err != nil {

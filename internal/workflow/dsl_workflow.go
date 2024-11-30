@@ -32,7 +32,7 @@ type (
 	Stage struct {
 		Name     string   `"stage" "(" @String ")" "{"`
 		Agent    *Agent   `( "agent" @@ )?`
-		Steps    []*Step  `( "steps" "{" @@* "}" )?`
+		Steps    []*Step  `( "steps" "{" @@+ "}" )?`
 		FailFast *bool    `( "failFast" @Bool )?`
 		Parallel Parallel `( "parallel" "{" @@+ "}" )?`
 		Close    string   `"}"`
@@ -40,8 +40,25 @@ type (
 
 	// Step represents individual steps within a stage
 	Step struct {
-		Echo *QuotedString `"echo" @String |`
-		Sh   *QuotedString `"sh" @String`
+		SingleKV *SingleKVCommand `@@ |`
+		MultiKV  *MultiKVCommand  `@@`
+		Echo     *QuotedString    //`"echo" @String |`
+		Sh       *QuotedString    //`"sh" @String`
+	}
+
+	SingleKVCommand struct {
+		Command *string       `@Ident`
+		Value   *QuotedString `@String`
+	}
+
+	MultiKVCommand struct {
+		Command string `@Ident`
+		Params []Param `@@ ("," @@)*`
+	}
+
+	Param struct {
+		Key   string       `@Ident ":"`
+		Value QuotedString `@String`
 	}
 
 	executable interface {

@@ -6,6 +6,9 @@ pipeline {
             steps {
                 echo 'Hello, Maven'
                 sh 'mvn --version'
+                git branch: 'master', 
+                    credentialsId: '12345-1234-4696-af25-123455',
+                    url: 'ssh://git@bitbucket.org:company/repo.git'
             }
         }
         stage('Example Test') {

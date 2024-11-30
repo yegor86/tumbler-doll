@@ -5,9 +5,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -32,10 +29,6 @@ var (
 		Long:  `Start API`,
 		Run: func(cmd *cli.Command, args []string) { // Initialize the databse
 			var err error
-
-			// Register signal handler and wait
-			signalChannel := make(chan os.Signal, 1)
-			signal.Notify(signalChannel, []os.Signal{syscall.SIGINT, syscall.SIGTERM}...)
 
 			client, err := wf_client.Dial(wf_client.Options{})
 			if err != nil {
@@ -67,15 +60,11 @@ var (
 			}
 
 			// Start the listener and service connections.
-			go func() {
-				if err = s.ListenAndServe(); err != nil {
-					close(signalChannel)
-					log.Fatalf("Server error: %v", err)
-				}
-			}()
+			if err = s.ListenAndServe(); err != nil {
+				log.Fatalf("Server error: %v", err)
+			}
+			
 			log.Printf("API listening on %s", s.Addr)
-
-			<-signalChannel
 		},
 	}
 )

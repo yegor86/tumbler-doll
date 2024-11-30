@@ -14,12 +14,14 @@ type (
 
 // Define the lexer rules for Jenkinsfile syntax
 var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
-	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|stages|stage|steps|sh|echo|none|failFast)\b`},
-	{Name: "String", Pattern: `'(.*?)'|"(.*?)"`},
+	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|stages|stage|steps|none|failFast)\b`},
+	{Name: "String", Pattern: `'([^']*)'|"([^"]*)"`},
 	{Name: "Bool", Pattern: `true|false`},
 	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 	{Name: "Punctuation", Pattern: `[{}()]`},
 	{Name: "whitespace", Pattern: `\s+`},
+	{Name: "Colon", Pattern: `:`},
+	{Name: "Comma", Pattern: `,`},
 })
 
 func (*DslParser) Parse(dslFile string) (*workflow.Pipeline, error) {
