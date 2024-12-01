@@ -13,10 +13,13 @@ type ScmPluginImpl struct {
 	logger hclog.Logger
 }
 
-func (g *ScmPluginImpl) Checkout(args shared.CheckoutArgs) string {
-	g.logger.Info("PluginImpl Checkout %s...", args.Url)
+func (g *ScmPluginImpl) Checkout(args map[string]interface{}) string {
+	url := args["url"]
+	branch := args["branch"]
+	// credentialsId, _ := args["credentialsId"]
+	g.logger.Info("PluginImpl Checkout %s...", url)
 
-	return "Cloned repo " + args.Url + " and branch " + args.Branch
+	return "Cloned repo " + url.(string) + " and branch " + branch.(string)
 }
 
 var handshakeConfig = plugin.HandshakeConfig{

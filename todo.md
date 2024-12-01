@@ -5,3 +5,6 @@
 4. CI queue
 5. Stream docker pull output on to the progress view
 6. plugin process is not killed
+7. secrets storage
+8. Execute plugins inside docker container
+9. Support comments in DSL

@@ -59,12 +59,12 @@ func (p *ScmPlugin) Start() error {
 
 func (p *ScmPlugin) Stop() error {
 	if p.client == nil {
-		return fmt.Errorf("Scm plugin is not initialized")
+		return fmt.Errorf("scm plugin is not initialized")
 	}
 	p.client.Kill()
 	return nil
 }
 
-func (scmClient *ScmPlugin) Checkout(args shared.CheckoutArgs) string {
+func (scmClient *ScmPlugin) Checkout(args map[string]interface{}) string {
 	return scmClient.scm.Checkout(args)
 }

@@ -16,10 +16,18 @@ type PluginManager struct {
 	plugins map[string]Plugin
 }
 
-func NewPluginManager() *PluginManager {
-	return &PluginManager{
-		plugins: make(map[string]Plugin),
-	}
+var (
+	instance *PluginManager
+	once     sync.Once
+)
+
+func GetInstance() *PluginManager {
+	once.Do(func() {
+		instance = &PluginManager{
+			plugins: make(map[string]Plugin),
+		}
+	})
+	return instance
 }
 
 func (pm *PluginManager) Register(name string, plugin Plugin) error {
@@ -63,39 +71,40 @@ func (pm *PluginManager) UnregisterAll() error {
 	return err
 }
 
-func (pm *PluginManager) Execute(pluginName string, methodName string, args ...interface{}) (interface{}, error) {
+func (pm *PluginManager) Execute(pluginName string, methodName string, args map[string]interface{}) (interface{}, error) {
 	pm.lock.RLock()
-    plugin, exists := pm.plugins[pluginName]
-    pm.lock.RUnlock()
-    if !exists {
-        return nil, fmt.Errorf("plugin %q not found", pluginName)
-    }
-    // Use reflection to get the plugin's method
-    pluginValue := reflect.ValueOf(plugin)
-    method := pluginValue.MethodByName(methodName)
-    if !method.IsValid() {
-        return nil, fmt.Errorf("method %q not found in plugin %q", methodName, pluginName)
-    }
+	plugin, exists := pm.plugins[pluginName]
+	pm.lock.RUnlock()
+	if !exists {
+		return nil, fmt.Errorf("plugin %q not found", pluginName)
+	}
+	// Use reflection to get the plugin's method
+	pluginValue := reflect.ValueOf(plugin)
+	method := pluginValue.MethodByName(methodName)
+	if !method.IsValid() {
+		return nil, fmt.Errorf("method %q not found in plugin %q", methodName, pluginName)
+	}
 
-    // Validate and call the method
-    inputArgs := make([]reflect.Value, len(args))
-    for i, arg := range args {
-        inputArgs[i] = reflect.ValueOf(arg)
-    }
+	// Validate and call the method
+	// inputArgs := make([]reflect.Value, len(args))
+	// for i, arg := range args {
+	//     inputArgs[i] = reflect.ValueOf(arg)
+	// }
+	inputArgs := []reflect.Value{reflect.ValueOf(args)}
 
-    // Call the method and handle results
-    results := method.Call(inputArgs)
-    if len(results) == 0 {
-        return nil, nil
-    }
-    if len(results) == 1 {
-        return results[0].Interface(), nil
-    }
+	// Call the method and handle results
+	results := method.Call(inputArgs)
+	if len(results) == 0 {
+		return nil, nil
+	}
+	if len(results) == 1 {
+		return results[0].Interface(), nil
+	}
 
-    // Return multiple results as a slice
-    output := make([]interface{}, len(results))
-    for i, result := range results {
-        output[i] = result.Interface()
-    }
-    return output, nil
+	// Return multiple results as a slice
+	output := make([]interface{}, len(results))
+	for i, result := range results {
+		output[i] = result.Interface()
+	}
+	return output, nil
 }

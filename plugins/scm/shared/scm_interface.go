@@ -6,20 +6,14 @@ import (
 	"github.com/hashicorp/go-plugin"
 )
 
-type CheckoutArgs struct {
-	Url           string
-	Branch        string
-	CredentialsId string
-}
-
 type Scm interface {
-	Checkout(args CheckoutArgs) string
+	Checkout(args map[string]interface{}) string
 }
 
 // Here is an implementation that talks over RPC
 type ScmRPCClient struct{ client *rpc.Client }
 
-func (g *ScmRPCClient) Checkout(args CheckoutArgs) string {
+func (g *ScmRPCClient) Checkout(args map[string]interface{}) string {
 	var resp string
 	err := g.client.Call("Plugin.Checkout", args, &resp)
 	if err != nil {
@@ -36,7 +30,7 @@ type ScmRPCServer struct {
 	Impl Scm
 }
 
-func (s *ScmRPCServer) Checkout(args CheckoutArgs, resp *string) error {
+func (s *ScmRPCServer) Checkout(args map[string]interface{}, resp *string) error {
 	*resp = s.Impl.Checkout(args)
 	return nil
 }

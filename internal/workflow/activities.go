@@ -11,9 +11,10 @@ import (
 	"unicode"
 
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/network"
 	dockerClient "github.com/docker/docker/client"
+	"github.com/yegor86/tumbler-doll/plugins"
 )
 
 type StageActivities struct {
@@ -28,14 +29,24 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 	}
 	
 	var results []string
+	var err error
+	var output string
 	for _, step := range steps {
-		terms := step.toCommand()
-		// fmt.Printf("Run %s with command %v \n", step.Name(), terms)
-		cmd := exec.Command(terms[0], terms[1:]...)
-		output, err := cmd.Output()
+		command, params := step.ToCommand()
+		fmt.Printf("Run %s command with parameters: %v \n", command, params)
+		var cmd *exec.Cmd
+		if params == nil {
+			cmd = exec.Command(command)
+			ret, e := cmd.Output()
+			output, err = string(ret), e
+		} else {
+			pluginManager := plugins.GetInstance()
+			ret, e := pluginManager.Execute("scm", "Checkout", params)
+			output, err = ret.(string), e
+		}
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
-			return results, err
+			// return results, err
 		}
 		results = append(results, string(output))
 		fmt.Printf("Command Output: %s\n", output)
@@ -83,8 +94,9 @@ func DockerActivity(ctx context.Context, imageName string, commands []*Step) ([]
 	// Execute each command separately inside the container
 	results := []string{}
 	for _, cmd := range commands {
+		cmd_, _ := cmd.ToCommand()
 		execResp, err := docker.ContainerExecCreate(ctx, containerID, container.ExecOptions{
-			Cmd:          cmd.toCommand(),
+			Cmd:          []string{cmd_},
 			AttachStdout: true,
 			AttachStderr: true,
 		})

@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -42,18 +43,16 @@ type (
 	Step struct {
 		SingleKV *SingleKVCommand `@@ |`
 		MultiKV  *MultiKVCommand  `@@`
-		Echo     *QuotedString    //`"echo" @String |`
-		Sh       *QuotedString    //`"sh" @String`
 	}
 
 	SingleKVCommand struct {
-		Command *string       `@Ident`
-		Value   *QuotedString `@String`
+		Command string       `@Ident`
+		Value   QuotedString `@String`
 	}
 
 	MultiKVCommand struct {
-		Command string `@Ident`
-		Params []Param `@@ ("," @@)*`
+		Command string  `@Ident`
+		Params  []Param `@@ ("," @@)*`
 	}
 
 	Param struct {
@@ -65,15 +64,6 @@ type (
 		execute(ctx workflow.Context, variables map[string]string, results map[string]any) error
 	}
 )
-
-func (step *Step) Name() string {
-	if step.Echo != nil {
-		return string(*step.Echo)
-	} else if step.Sh != nil {
-		return string(*step.Sh)
-	}
-	return "Unknown"
-}
 
 type QuotedString string
 
@@ -178,9 +168,25 @@ func executeAsync(exe executable, ctx workflow.Context, variables map[string]str
 	return future
 }
 
-func (step *Step) toCommand() []string {
-	if step.Echo != nil {
-		return []string{"echo", string(*step.Echo)}
+func (step *Step) Name() string {
+	if step.SingleKV != nil {
+		return step.SingleKV.Command
+	} else if step.MultiKV != nil {
+		return step.MultiKV.Command
 	}
-	return strings.Fields(string(*step.Sh))
+	return "Unknown"
+}
+
+func (step *Step) ToCommand() (string, map[string]interface{}) {
+	if step.SingleKV == nil && step.MultiKV == nil {
+		return "", nil
+	}
+	if step.SingleKV != nil {
+		return fmt.Sprintf("%s '%s'", step.SingleKV.Command, step.SingleKV.Value), nil
+	}
+	params := make(map[string]interface{})
+	for _, p := range step.MultiKV.Params {
+		params[p.Key] = string(p.Value)
+	}
+	return step.MultiKV.Command, params
 }
