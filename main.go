@@ -9,6 +9,7 @@ import (
 	"github.com/yegor86/tumbler-doll/cmd"
 	"github.com/yegor86/tumbler-doll/plugins"
 	"github.com/yegor86/tumbler-doll/plugins/scm"
+	"github.com/yegor86/tumbler-doll/plugins/shell"
 )
 
 func main() {
@@ -16,7 +17,14 @@ func main() {
 	pluginManager := plugins.GetInstance()
 	defer pluginManager.UnregisterAll()
 
-	pluginManager.Register("scm", &scm.ScmPlugin{})
+	err := pluginManager.Register("scm", &scm.ScmPlugin{})
+	if err != nil {
+		slog.Warn("Failed to register plugin %s: %v", "scm", err)
+	}
+	err = pluginManager.Register("shell", &shell.ShellPlugin{})
+	if err != nil {
+		slog.Warn("Failed to register plugin %s: %v", "shell", err)
+	}
 
 	signals := make(chan os.Signal, 1)
     signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)

@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -181,10 +180,11 @@ func (step *Step) ToCommand() (string, map[string]interface{}) {
 	if step.SingleKV == nil && step.MultiKV == nil {
 		return "", nil
 	}
-	if step.SingleKV != nil {
-		return fmt.Sprintf("%s '%s'", step.SingleKV.Command, step.SingleKV.Value), nil
-	}
 	params := make(map[string]interface{})
+	if step.SingleKV != nil {
+		params["contents"] = step.SingleKV.Value
+		return step.SingleKV.Command, params;
+	}
 	for _, p := range step.MultiKV.Params {
 		params[p.Key] = string(p.Value)
 	}

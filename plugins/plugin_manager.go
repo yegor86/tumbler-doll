@@ -9,11 +9,13 @@ import (
 type Plugin interface {
 	Start() error
 	Stop() error
+	ListMethods() []string
 }
 
 type PluginManager struct {
 	lock    sync.RWMutex
 	plugins map[string]Plugin
+	methodToPlugin map[string]string
 }
 
 var (
@@ -25,6 +27,7 @@ func GetInstance() *PluginManager {
 	once.Do(func() {
 		instance = &PluginManager{
 			plugins: make(map[string]Plugin),
+			methodToPlugin: make(map[string]string),
 		}
 	})
 	return instance
@@ -42,6 +45,9 @@ func (pm *PluginManager) Register(name string, plugin Plugin) error {
 	defer pm.lock.Unlock()
 
 	pm.plugins[name] = plugin
+	for _, methodName := range plugin.ListMethods() {
+		pm.methodToPlugin[methodName] = name
+	}
 	return nil
 }
 
@@ -69,6 +75,13 @@ func (pm *PluginManager) UnregisterAll() error {
 		}
 	}
 	return err
+}
+
+func (pm *PluginManager) GetPluginName(methodName string) string {
+	if pluginName, ok := pm.methodToPlugin[methodName]; ok {
+		return pluginName
+	}
+	return ""
 }
 
 func (pm *PluginManager) Execute(pluginName string, methodName string, args map[string]interface{}) (interface{}, error) {

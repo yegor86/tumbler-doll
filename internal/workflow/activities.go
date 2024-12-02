@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os/exec"
 	"strings"
 	"unicode"
 
@@ -28,27 +27,20 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		return DockerActivity(ctx, string(agent.Docker.Image), steps)
 	}
 	
+	pluginManager := plugins.GetInstance()
 	var results []string
-	var err error
-	var output string
 	for _, step := range steps {
 		command, params := step.ToCommand()
-		fmt.Printf("Run %s command with parameters: %v \n", command, params)
-		var cmd *exec.Cmd
-		if params == nil {
-			cmd = exec.Command(command)
-			ret, e := cmd.Output()
-			output, err = string(ret), e
-		} else {
-			pluginManager := plugins.GetInstance()
-			ret, e := pluginManager.Execute("scm", "Checkout", params)
-			output, err = ret.(string), e
-		}
+		
+		pluginName := pluginManager.GetPluginName(command)
+		
+		output, err := pluginManager.Execute(pluginName, command, params)
+		
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
 			// return results, err
 		}
-		results = append(results, string(output))
+		results = append(results, output.(string))
 		fmt.Printf("Command Output: %s\n", output)
 	}
 

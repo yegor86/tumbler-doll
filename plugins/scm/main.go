@@ -65,6 +65,12 @@ func (p *ScmPlugin) Stop() error {
 	return nil
 }
 
+func (p *ScmPlugin) ListMethods() []string {
+	return []string {
+		"git",
+	}
+}
+
 func (scmClient *ScmPlugin) Checkout(args map[string]interface{}) string {
 	return scmClient.scm.Checkout(args)
 }
