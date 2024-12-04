@@ -8,3 +8,4 @@
 7. secrets storage
 8. Execute plugins inside docker container
 9. Support comments in DSL
+10. Support nested script block

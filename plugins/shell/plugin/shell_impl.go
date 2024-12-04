@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -8,6 +10,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 
+	"github.com/yegor86/tumbler-doll/internal/workflow"
 	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
 )
 
@@ -30,12 +33,21 @@ func (g *ShellPluginImpl) Echo(args map[string]interface{}) string {
 	return string(result)
 }
 
-func (g *ShellPluginImpl) Sh(args map[string]interface{}) string {
+func (g *ShellPluginImpl) Sh(params map[string]interface{}) string {
 
-	g.logger.Info("[Shell] sh '%s'...", args["text"])
-	text := args["text"].(string)
-
+	g.logger.Info("[Shell] sh '%s'...", params["text"])
+	text := params["text"].(string)
 	terms := strings.Fields(text)
+	if containerId, ok := params["containerId"]; ok {
+		output, err := workflow.ExecContainer(context.Background(), containerId.(string), terms)
+		
+		if err != nil {
+			g.logger.Error("Error attaching to the container %s: %v. Continue running command on host machine", containerId, err)
+			return fmt.Errorf("error attaching to container %s: %v", containerId, err).Error()
+		}
+		return string(output)
+	}
+
 	cmd := exec.Command(terms[0], terms[1:]...)
 	result, err := cmd.CombinedOutput()
 	if err != nil {
