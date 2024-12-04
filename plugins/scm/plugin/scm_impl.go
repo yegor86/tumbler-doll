@@ -40,7 +40,7 @@ func main() {
 	}
 
 	var pluginMap = map[string]plugin.Plugin{
-		"checkout": &shared.ScmPlugin{Impl: scmImpl},
+		"scm": &shared.ScmPlugin{Impl: scmImpl},
 	}
 
 	// logger.Warn("[scp] message from plugin")

@@ -10,7 +10,6 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
-	// "github.com/yegor86/tumbler-doll/plugins/scm"
 	"github.com/yegor86/tumbler-doll/plugins/scm/shared"
 )
 
@@ -31,15 +30,6 @@ var (
 				log.Fatalln("Unable to create Workflow client", err)
 			}
 			defer c.Close()
-
-			// Plugin load
-			// scmClient = scm.NewScmClient()
-			// checkoutArgs := shared.CheckoutArgs{
-			// 	Url:           "https://github.com/yegor86/tumbler-doll.git",
-			// 	Branch:        "main",
-			// 	CredentialsId: "",
-			// }
-			// scmClient.Checkout(checkoutArgs)
 
 			w := worker.New(c, "dsl", worker.Options{})
 

@@ -23,7 +23,7 @@ var handshakeConfig = plugin.HandshakeConfig{
 
 // pluginMap is the map of plugins we can dispense.
 var pluginMap = map[string]plugin.Plugin{
-	"checkout": &shared.ScmPlugin{},
+	"scm": &shared.ScmPlugin{},
 }
 
 func (p *ScmPlugin) Start() error {
@@ -47,7 +47,7 @@ func (p *ScmPlugin) Start() error {
 	}
 
 	// Request the plugin
-	raw, err := rpcClient.Dispense("checkout")
+	raw, err := rpcClient.Dispense("scm")
 	if err != nil {
 		return err
 	}
@@ -65,9 +65,9 @@ func (p *ScmPlugin) Stop() error {
 	return nil
 }
 
-func (p *ScmPlugin) ListMethods() []string {
-	return []string {
-		"git",
+func (p *ScmPlugin) ListMethods() map[string]string {
+	return map[string]string {
+		"git": "checkout",
 	}
 }
 

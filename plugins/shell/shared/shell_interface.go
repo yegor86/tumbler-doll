@@ -8,6 +8,7 @@ import (
 
 type Shell interface {
 	Echo(args map[string]interface{}) string
+	Sh(args map[string]interface{}) string
 }
 
 // Here is an implementation that talks over RPC
@@ -25,6 +26,18 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) string {
 	return resp
 }
 
+func (g *ShellRPCClient) Sh(args map[string]interface{}) string {
+	var resp string
+	err := g.client.Call("Plugin.Sh", args, &resp)
+	if err != nil {
+		// You usually want your interfaces to return errors. If they don't,
+		// there isn't much other choice here.
+		panic(err)
+	}
+
+	return resp
+}
+
 type ShellRPCServer struct {
 	// This is the real implementation
 	Impl Shell
@@ -32,6 +45,11 @@ type ShellRPCServer struct {
 
 func (s *ShellRPCServer) Echo(args map[string]interface{}, resp *string) error {
 	*resp = s.Impl.Echo(args)
+	return nil
+}
+
+func (s *ShellRPCServer) Sh(args map[string]interface{}, resp *string) error {
+	*resp = s.Impl.Sh(args)
 	return nil
 }
 

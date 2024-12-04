@@ -33,12 +33,18 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		command, params := step.ToCommand()
 		
 		pluginName := pluginManager.GetPluginName(command)
+		methodFunc := pluginManager.GetFunctionByMethod(command)
 		
-		output, err := pluginManager.Execute(pluginName, command, params)
+		capitalizedCommand := strings.ToUpper(methodFunc[:1]) + strings.ToLower(methodFunc[1:])
+		output, err := pluginManager.Execute(
+			pluginName,
+			capitalizedCommand,
+			params)
 		
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
-			// return results, err
+			results = append(results, err.Error())
+			return results, err
 		}
 		results = append(results, output.(string))
 		fmt.Printf("Command Output: %s\n", output)

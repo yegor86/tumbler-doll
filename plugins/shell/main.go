@@ -65,13 +65,17 @@ func (p *ShellPlugin) Stop() error {
 	return nil
 }
 
-func (p *ShellPlugin) ListMethods() []string {
-	return []string {
-		"echo",
-		"sh",
+func (p *ShellPlugin) ListMethods() map[string]string {
+	return map[string]string {
+		"echo": "echo",
+		"sh": "sh",
 	}
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
 	return scmClient.shell.Echo(args)
+}
+
+func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
+	return scmClient.shell.Sh(args)
 }

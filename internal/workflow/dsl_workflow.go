@@ -182,8 +182,8 @@ func (step *Step) ToCommand() (string, map[string]interface{}) {
 	}
 	params := make(map[string]interface{})
 	if step.SingleKV != nil {
-		params["contents"] = step.SingleKV.Value
-		return step.SingleKV.Command, params;
+		params["text"] = string(step.SingleKV.Value)
+		return step.SingleKV.Command, params
 	}
 	for _, p := range step.MultiKV.Params {
 		params[p.Key] = string(p.Value)

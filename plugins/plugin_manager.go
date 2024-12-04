@@ -9,13 +9,14 @@ import (
 type Plugin interface {
 	Start() error
 	Stop() error
-	ListMethods() []string
+	ListMethods() map[string]string
 }
 
 type PluginManager struct {
 	lock    sync.RWMutex
 	plugins map[string]Plugin
 	methodToPlugin map[string]string
+	methodToFunc map[string]string
 }
 
 var (
@@ -28,6 +29,7 @@ func GetInstance() *PluginManager {
 		instance = &PluginManager{
 			plugins: make(map[string]Plugin),
 			methodToPlugin: make(map[string]string),
+			methodToFunc: make(map[string]string),
 		}
 	})
 	return instance
@@ -45,8 +47,9 @@ func (pm *PluginManager) Register(name string, plugin Plugin) error {
 	defer pm.lock.Unlock()
 
 	pm.plugins[name] = plugin
-	for _, methodName := range plugin.ListMethods() {
+	for methodName, methodFunc := range plugin.ListMethods() {
 		pm.methodToPlugin[methodName] = name
+		pm.methodToFunc[methodName] = methodFunc
 	}
 	return nil
 }
@@ -80,6 +83,13 @@ func (pm *PluginManager) UnregisterAll() error {
 func (pm *PluginManager) GetPluginName(methodName string) string {
 	if pluginName, ok := pm.methodToPlugin[methodName]; ok {
 		return pluginName
+	}
+	return ""
+}
+
+func (pm *PluginManager) GetFunctionByMethod(methodName string) string {
+	if methodFunc, ok := pm.methodToFunc[methodName]; ok {
+		return methodFunc
 	}
 	return ""
 }
