@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -35,27 +33,22 @@ func (g *ShellPluginImpl) Echo(args map[string]interface{}) string {
 
 func (g *ShellPluginImpl) Sh(params map[string]interface{}) string {
 
-	g.logger.Info("[Shell] sh '%s'...", params["text"])
-	text := params["text"].(string)
-	terms := strings.Fields(text)
-	if containerId, ok := params["containerId"]; ok {
-		output, err := workflow.ExecContainer(context.Background(), containerId.(string), terms)
-		
+	next := func (params map[string]interface{}) string {
+		g.logger.Info("[Shell] sh '%s'...", params["text"])
+		text := params["text"].(string)
+		terms := strings.Fields(text)
+
+		cmd := exec.Command(terms[0], terms[1:]...)
+		result, err := cmd.CombinedOutput()
 		if err != nil {
-			g.logger.Error("Error attaching to the container %s: %v. Continue running command on host machine", containerId, err)
-			return fmt.Errorf("error attaching to container %s: %v", containerId, err).Error()
+			g.logger.Error("[Shell] Plugin error %v", err)
+			return err.Error()
 		}
-		return string(output)
-	}
 
-	cmd := exec.Command(terms[0], terms[1:]...)
-	result, err := cmd.CombinedOutput()
-	if err != nil {
-		g.logger.Error("[Shell] Plugin error %v", err)
-		return err.Error()
+		return string(result)
 	}
-
-	return string(result)
+	containerized := workflow.Containerize(next)
+	return containerized(params);
 }
 
 var handshakeConfig = plugin.HandshakeConfig{

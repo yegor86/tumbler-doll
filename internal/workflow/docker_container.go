@@ -78,6 +78,23 @@ func (dm *DockerContainer) StopContainer(ctx context.Context, imageName string) 
 	return nil
 }
 
+func Containerize(next func(params map[string]interface{}) string) func(params map[string]interface{}) string {
+	return func(params map[string]interface{}) string {
+		if containerId, ok := params["containerId"]; ok {
+			text := params["text"].(string)
+			terms := strings.Fields(text)
+			output, err := ExecContainer(context.Background(), containerId.(string), terms)
+			
+			if err != nil {
+				return fmt.Errorf("error attaching to container %s: %v", containerId, err).Error()
+			}
+			return string(output)
+		} else {
+    		return next(params)
+		}
+    }
+}
+
 func ExecContainer(ctx context.Context, containerId string, cmd []string) ([]byte, error) {
 	// Create a Docker client
 	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion(dockerClientVersion))
