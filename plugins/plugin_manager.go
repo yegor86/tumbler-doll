@@ -6,6 +6,11 @@ import (
 	"sync"
 )
 
+type MethodInfo struct {
+	pluginName string
+	funcName string
+}
+
 type Plugin interface {
 	Start() error
 	Stop() error
@@ -15,8 +20,7 @@ type Plugin interface {
 type PluginManager struct {
 	lock    sync.RWMutex
 	plugins map[string]Plugin
-	methodToPlugin map[string]string
-	methodToFunc map[string]string
+	methodToInfo map[string]MethodInfo
 }
 
 var (
@@ -28,8 +32,7 @@ func GetInstance() *PluginManager {
 	once.Do(func() {
 		instance = &PluginManager{
 			plugins: make(map[string]Plugin),
-			methodToPlugin: make(map[string]string),
-			methodToFunc: make(map[string]string),
+			methodToInfo: make(map[string]MethodInfo),
 		}
 	})
 	return instance
@@ -48,8 +51,10 @@ func (pm *PluginManager) Register(name string, plugin Plugin) error {
 
 	pm.plugins[name] = plugin
 	for methodName, methodFunc := range plugin.ListMethods() {
-		pm.methodToPlugin[methodName] = name
-		pm.methodToFunc[methodName] = methodFunc
+		pm.methodToInfo[methodName] = MethodInfo { 
+			pluginName: name,
+			funcName: methodFunc,
+		}
 	}
 	return nil
 }
@@ -81,15 +86,15 @@ func (pm *PluginManager) UnregisterAll() error {
 }
 
 func (pm *PluginManager) GetPluginName(methodName string) string {
-	if pluginName, ok := pm.methodToPlugin[methodName]; ok {
-		return pluginName
+	if info, ok := pm.methodToInfo[methodName]; ok {
+		return info.pluginName
 	}
 	return ""
 }
 
 func (pm *PluginManager) GetFunctionByMethod(methodName string) string {
-	if methodFunc, ok := pm.methodToFunc[methodName]; ok {
-		return methodFunc
+	if info, ok := pm.methodToInfo[methodName]; ok {
+		return info.funcName
 	}
 	return ""
 }
