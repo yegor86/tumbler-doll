@@ -7,5 +7,5 @@
 6. plugin process is not killed
 7. secrets storage
 8. Execute plugins inside docker container
-9. Support comments in DSL
 10. Support nested script block
+11. Stream Docker output into plugin stdout

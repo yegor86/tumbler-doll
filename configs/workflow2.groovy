@@ -6,9 +6,9 @@ pipeline {
             steps {
                 echo 'Hello, Maven'
                 sh 'mvn --version'
-                git branch: 'master',
+                git branch: 'main',
                     credentialsId: '12345-1234-4696-af25-123455',
-                    url: 'ssh://git@bitbucket.org:company/repo.git'
+                    url: 'https://github.com/yegor86/tumbler-doll.git'
             }
         }
         stage('Example Test') {

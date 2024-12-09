@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -14,12 +15,36 @@ type ScmPluginImpl struct {
 }
 
 func (g *ScmPluginImpl) Checkout(args map[string]interface{}) string {
-	url := args["url"]
-	branch := args["branch"]
+	if _, ok := args["url"]; !ok {
+		return fmt.Errorf("url is missing").Error()
+	}
+	if _, ok := args["branch"]; !ok {
+		return fmt.Errorf("branch is missing").Error()
+	}
+	
+	url := args["url"].(string)
+	branch := args["branch"].(string)
 	// credentialsId, _ := args["credentialsId"]
 	g.logger.Info("PluginImpl Checkout %s...", url)
 
-	return "Cloned repo " + url.(string) + " and branch " + branch.(string)
+	cloneDir, err := shared.DeriveCloneDir(url)
+	if err != nil {
+		return err.Error()
+	}
+	
+	repo := &shared.GitRepo {
+		Url: url,
+		Branch: branch,
+		CloneDir: "/tmp/" + cloneDir,
+		Changelog: true,
+		Credentials: "",
+		Poll: true,
+	}
+	if err := repo.CloneOrPull(); err != nil {
+		return err.Error()
+	}
+
+	return fmt.Sprintf("Cloned repo %s and branch %s", url, branch)
 }
 
 var handshakeConfig = plugin.HandshakeConfig{
