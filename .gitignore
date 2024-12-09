@@ -1,1 +1,12 @@
+## ignore all files without extension
+# Ignore all
+plugins/**/*
+
+# Unignore all with extensions
+!plugins/**/*.*
+
+# Unignore all dirs
+!plugins/**/*/
+## end ignore all files without extension
+
 __debug*
