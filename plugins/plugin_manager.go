@@ -8,7 +8,7 @@ import (
 
 type MethodInfo struct {
 	pluginName string
-	funcName string
+	funcName   string
 }
 
 type Plugin interface {
@@ -18,8 +18,8 @@ type Plugin interface {
 }
 
 type PluginManager struct {
-	lock    sync.RWMutex
-	plugins map[string]Plugin
+	lock         sync.RWMutex
+	plugins      map[string]Plugin
 	methodToInfo map[string]MethodInfo
 }
 
@@ -31,7 +31,7 @@ var (
 func GetInstance() *PluginManager {
 	once.Do(func() {
 		instance = &PluginManager{
-			plugins: make(map[string]Plugin),
+			plugins:      make(map[string]Plugin),
 			methodToInfo: make(map[string]MethodInfo),
 		}
 	})
@@ -51,9 +51,9 @@ func (pm *PluginManager) Register(name string, plugin Plugin) error {
 
 	pm.plugins[name] = plugin
 	for methodName, methodFunc := range plugin.ListMethods() {
-		pm.methodToInfo[methodName] = MethodInfo { 
+		pm.methodToInfo[methodName] = MethodInfo{
 			pluginName: name,
-			funcName: methodFunc,
+			funcName:   methodFunc,
 		}
 	}
 	return nil
@@ -127,6 +127,11 @@ func (pm *PluginManager) Execute(pluginName string, methodName string, args map[
 	}
 	if len(results) == 1 {
 		return results[0].Interface(), nil
+	}
+	if len(results) == 2 && results[1].IsNil() {
+		return results[0].Interface(), nil
+	} else if len(results) == 2 && !results[1].IsNil() {
+		return results[0].Interface(), results[1].Interface().(error)	
 	}
 
 	// Return multiple results as a slice

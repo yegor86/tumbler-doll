@@ -71,6 +71,6 @@ func (p *ScmPlugin) ListMethods() map[string]string {
 	}
 }
 
-func (scmClient *ScmPlugin) Checkout(args map[string]interface{}) string {
+func (scmClient *ScmPlugin) Checkout(args map[string]interface{}) (string, error) {
 	return scmClient.scm.Checkout(args)
 }

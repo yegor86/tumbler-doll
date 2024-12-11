@@ -1,28 +1,34 @@
 package shared
 
 import (
+	"errors"
 	"net/rpc"
 
 	"github.com/hashicorp/go-plugin"
 )
 
 type Scm interface {
-	Checkout(args map[string]interface{}) string
+	Checkout(args map[string]interface{}) (string, error)
 }
 
 // Here is an implementation that talks over RPC
 type ScmRPCClient struct{ client *rpc.Client }
 
-func (g *ScmRPCClient) Checkout(args map[string]interface{}) string {
-	var resp string
+func (g *ScmRPCClient) Checkout(args map[string]interface{}) (string, error) {
+	var resp []string
 	err := g.client.Call("Plugin.Checkout", args, &resp)
-	if err != nil {
+	if err != nil{
 		// You usually want your interfaces to return errors. If they don't,
 		// there isn't much other choice here.
 		panic(err)
 	}
+	result := resp[0]
+	errMessage := resp[1]
+	if errMessage != "" {
+		return "", errors.New(errMessage)
+	}
 
-	return resp
+	return result, nil
 }
 
 type ScmRPCServer struct {
@@ -30,8 +36,14 @@ type ScmRPCServer struct {
 	Impl Scm
 }
 
-func (s *ScmRPCServer) Checkout(args map[string]interface{}, resp *string) error {
-	*resp = s.Impl.Checkout(args)
+func (s *ScmRPCServer) Checkout(args map[string]interface{}, resp *[]string) error {
+	r, err := s.Impl.Checkout(args)
+	
+	var errMessage string
+	if err != nil {
+		errMessage = err.Error()
+	}
+	*resp = []string{r, errMessage}
 	return nil
 }
 

@@ -14,12 +14,12 @@ type ScmPluginImpl struct {
 	logger hclog.Logger
 }
 
-func (g *ScmPluginImpl) Checkout(args map[string]interface{}) string {
+func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 	if _, ok := args["url"]; !ok {
-		return fmt.Errorf("url is missing").Error()
+		return "", fmt.Errorf("url is missing")
 	}
 	if _, ok := args["branch"]; !ok {
-		return fmt.Errorf("branch is missing").Error()
+		return "", fmt.Errorf("branch is missing")
 	}
 	
 	url := args["url"].(string)
@@ -29,7 +29,7 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) string {
 
 	cloneDir, err := shared.DeriveCloneDir(url)
 	if err != nil {
-		return err.Error()
+		return "", err
 	}
 	
 	repo := &shared.GitRepo {
@@ -41,10 +41,10 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) string {
 		Poll: true,
 	}
 	if err := repo.CloneOrPull(); err != nil {
-		return err.Error()
+		return "", err
 	}
 
-	return fmt.Sprintf("Cloned repo %s and branch %s", url, branch)
+	return fmt.Sprintf("Cloned repo %s and branch %s", url, branch), nil
 }
 
 var handshakeConfig = plugin.HandshakeConfig{
