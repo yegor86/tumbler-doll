@@ -2,6 +2,7 @@ package shared
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"path"
@@ -12,12 +13,13 @@ import (
 )
 
 type GitRepo struct {
-	Url         string
-	Branch      string
-	CloneDir    string
-	Changelog   bool
-	Credentials string
-	Poll        bool
+	Url            string
+	Branch         string
+	CloneDir       string
+	Changelog      bool
+	Credentials    string
+	Poll           bool
+	ProgressWriter io.Writer
 }
 
 func (r *GitRepo) CloneOrPull() error {
@@ -35,7 +37,7 @@ func (r *GitRepo) CloneOrPull() error {
 func (r *GitRepo) cloneRepo() error {
 	options := &git.CloneOptions{
 		URL:           r.Url,
-		Progress:      os.Stdout,
+		Progress:      r.ProgressWriter,
 		ReferenceName: plumbing.NewBranchReferenceName(r.Branch),
 	}
 
@@ -61,7 +63,7 @@ func (r *GitRepo) pullRepo() error {
 	options := &git.PullOptions{
 		RemoteName:    "origin",
 		ReferenceName: plumbing.NewBranchReferenceName(r.Branch),
-		Progress:      os.Stdout,
+		Progress:      r.ProgressWriter,
 	}
 
 	err = worktree.Pull(options)

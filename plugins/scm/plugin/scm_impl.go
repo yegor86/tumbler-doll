@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/hashicorp/go-hclog"
@@ -21,7 +22,7 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 	if _, ok := args["branch"]; !ok {
 		return "", fmt.Errorf("branch is missing")
 	}
-	
+
 	url := args["url"].(string)
 	branch := args["branch"].(string)
 	// credentialsId, _ := args["credentialsId"]
@@ -31,14 +32,17 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
-	repo := &shared.GitRepo {
-		Url: url,
-		Branch: branch,
-		CloneDir: "/tmp/" + cloneDir,
-		Changelog: true,
+
+	repo := &shared.GitRepo{
+		Url:         url,
+		Branch:      branch,
+		CloneDir:    "/tmp/" + cloneDir,
+		Changelog:   true,
 		Credentials: "",
-		Poll: true,
+		Poll:        true,
+		ProgressWriter: g.logger.StandardWriter(&hclog.StandardLoggerOptions{
+			InferLevels: true,
+		}),
 	}
 	if err := repo.CloneOrPull(); err != nil {
 		return "", err
@@ -56,7 +60,7 @@ var handshakeConfig = plugin.HandshakeConfig{
 func main() {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Level:      hclog.Debug,
-		Output:     os.Stdout,
+		Output:     os.Stderr,
 		JSONFormat: true,
 	})
 
@@ -68,14 +72,10 @@ func main() {
 		"scm": &shared.ScmPlugin{Impl: scmImpl},
 	}
 
-	// logger.Warn("[scp] message from plugin")
-	// logger.Warn("[scp] yet another message")
-	os.Setenv(handshakeConfig.MagicCookieKey, handshakeConfig.MagicCookieValue)
-
 	plugin.Serve(&plugin.ServeConfig{
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
-		GRPCServer:      plugin.DefaultGRPCServer,
-		// Logger:          logger,
 	})
+
+	log.Println("Test output")
 }
