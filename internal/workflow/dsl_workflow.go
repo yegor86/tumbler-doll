@@ -30,12 +30,12 @@ type (
 
 	// Stage represents a stage block within stages
 	Stage struct {
-		Name     string   `"stage" "(" @String ")" "{"`
-		Agent    *Agent   `( "agent" @@ )?`
-		Steps    []*Step  `( "steps" "{" @@+ "}" )?`
-		FailFast *bool    `( "failFast" @Bool )?`
-		Parallel Parallel `( "parallel" "{" @@+ "}" )?`
-		Close    string   `"}"`
+		Name     QuotedString `"stage" "(" @String ")" "{"`
+		Agent    *Agent       `( "agent" @@ )?`
+		Steps    []*Step      `( "steps" "{" @@+ "}" )?`
+		FailFast *bool        `( "failFast" @Bool )?`
+		Parallel Parallel     `( "parallel" "{" @@+ "}" )?`
+		Close    string       `"}"`
 	}
 
 	// Step represents individual steps within a stage
@@ -94,7 +94,7 @@ func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, r
 		if err != nil {
 			return err
 		}
-		results[stage.Name] = parallelResults
+		results[string(stage.Name)] = parallelResults
 	}
 
 	if err := stage.executeSteps(ctx, variables, results); err != nil {
@@ -121,7 +121,7 @@ func (stage *Stage) executeSteps(ctx workflow.Context, variables map[string]stri
 	if err != nil {
 		return err
 	}
-	results[stage.Name] = result
+	results[string(stage.Name)] = result
 	return nil
 }
 
