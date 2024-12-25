@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -13,13 +12,12 @@ import (
 	"github.com/yegor86/tumbler-doll/plugins/scm"
 	"github.com/yegor86/tumbler-doll/plugins/shell"
 	"github.com/yegor86/tumbler-doll/internal/env"
+	"github.com/yegor86/tumbler-doll/internal/cryptography"
 )
 
 func main() {
 	env.LoadEnvVars()
-	for _, e := range os.Environ() {
-        fmt.Println(e)
-    }
+	cryptography.InitCrypto()
 
 	pluginManager := plugins.GetInstance()
 	defer pluginManager.UnregisterAll()
