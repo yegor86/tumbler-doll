@@ -24,11 +24,7 @@ SOFTWARE.
 package cryptography
 
 import (
-	"crypto/aes"
-	cipherLib "crypto/cipher"
 	"encoding/base64"
-	"encoding/binary"
-	"log"
 	"regexp"
 	"strings"
 
@@ -47,9 +43,16 @@ func DecryptCredentials(credentials *[]xml.Credential, secret []byte) ([]xml.Cre
 		for key, value := range credential.Tags {
 			if isBase64EncodedSecret(value) {
 				encodedCipher := stripBrackets(value)
-				cipher := base64Decode(encodedCipher)
-				decrypted := decrypt(cipher, secret)
-				decryptedCredentials[i].Tags[key] = decrypted
+				cipher, err := base64Decode(encodedCipher)
+				if err != nil {
+					return nil, err
+				}
+
+				decrypted, err := decrypt(cipher, secret)
+				if err != nil {
+					return nil, err
+				}
+				decryptedCredentials[i].Tags[key] = string(decrypted)
 			}
 		}
 
@@ -104,49 +107,21 @@ func isBracketed(text string) bool {
 	return strings.HasPrefix(text, "{") && strings.HasSuffix(text, "}")
 }
 
-func base64Decode(encoded string) []byte {
+func base64Decode(encoded string) ([]byte, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
-	check(err)
-	return decoded
+	if err != nil {
+		return nil, err
+	}
+	return decoded, nil
 }
 
 func textBetweenBrackets(text string) string {
 	return regexp.MustCompile("{(.*?)}").FindStringSubmatch(text)[1]
 }
 
-func decrypt(cipher []byte, secret []byte) string {
-	if cipher[0] == 1 { // you've gotta love jenkins
-		return decryptNewFormatCredentials(cipher, secret)
-	} else {
-		return decryptOldFormatCredentials(cipher, secret)
+func decrypt(cipher []byte, secret []byte) ([]byte, error) {
+	if cipher[0] == 1 {
+		return decryptAes128Cbc(cipher, secret)
 	}
-}
-
-func decryptNewFormatCredentials(cipher []byte, secret []byte) string {
-	ivLength := binary.BigEndian.Uint32(cipher[1:5])
-	dataLength := int(binary.BigEndian.Uint32(cipher[5:9]))
-
-	cipher = cipher[9:] // strip version, iv and data length
-
-	iv := cipher[:ivLength]
-	cipher = cipher[ivLength:] //strip iv
-	block, err := aes.NewCipher(secret)
-	check(err)
-	mode := cipherLib.NewCBCDecrypter(block, iv)
-	mode.CryptBlocks(cipher, cipher)
-
-	// Remove PKCS padding
-	n := int(cipher[dataLength-1])
-	return string(cipher[:dataLength-n])
-}
-
-func decryptOldFormatCredentials(decoded []byte, secret []byte) string {
-	decrypted := string(decryptAes128Ecb(decoded, secret))
-	return strings.Replace(decrypted, "::::MAGIC::::", "", -1)
-}
-
-func check(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
+	return decryptAes128Ecb(cipher, secret)
 }

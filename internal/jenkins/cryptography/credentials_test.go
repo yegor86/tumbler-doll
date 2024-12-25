@@ -24,11 +24,14 @@ SOFTWARE.
 package cryptography
 
 import (
-	"os"
 	"testing"
 
 	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	decryptedSecret = "V7sRJ]hBJE/7HWk4"
 )
 
 var (
@@ -36,14 +39,14 @@ var (
 		{
 			Tags: map[string]string{
 				"username": "user_1",
-				"password": "B+4pJjkJXD+pzyT9lcq8M8vF+p5YU4HmWy+MWldEdG4=",
+				"password": "jteGsiX7VHD7320kqlnhY3doAdfZx5VoEmG+VrkkMco=",
 			},
 		},
 		{
 			Tags: map[string]string{
 				"username":   "user_1",
 				"privateKey": "LINE_1\nLINE_2\nLINE_2",
-				"passphrase": "7fPxAjao0hmb9ggFCSl8WsvF+p5YU4HmWy+MWldEdG4=",
+				"passphrase": "Z7N3IHxxJIUpFQWPbDdZz32cuRUtc2goojPSub0AMvw=",
 			},
 		},
 	}
@@ -52,11 +55,11 @@ var (
 		{
 			Tags: map[string]string{
 				"username": "user_1",
-				"password": "password_1\t\t\t\t\t\t\t\t\t"},
+				"password": ")gYoLsi{D0A[#!shE}iw4it}c"},
 		},
 		{
 			Tags: map[string]string{
-				"passphrase": "passphrase\t\t\t\t\t\t\t\t\t",
+				"passphrase": "CZ)h'-z*+&cTUL)5n9P:A&7t'bs'q",
 				"username":   "user_1",
 				"privateKey": "LINE_1\nLINE_2\nLINE_2"},
 		},
@@ -66,20 +69,20 @@ var (
 		{
 			Tags: map[string]string{
 				"username": "xfireadmin",
-				"password": "AQAAABAAAAAQtnCexFYLFtmTQCL0x3wnirMnXVA7aZy+lfrfso+SjHI=",
+				"password": "AQAAABAAAAAQTcjjf6+TSYQKfKW5GGFXONqrEhCYnQ1solOK6wQMfTc=",
 			},
 		},
 		{
 			Tags: map[string]string{
 				"username": "gitlabadmin",
-				"password": "{AQAAABAAAAAgPT7JbBVgyWiivobt0CJEduLyP0lB3uyTj+D5WBvVk6jyG6BQFPYGN4Z3VJN2JLDm}",
+				"password": "{AQAAABAAAAAgyJpDg7KJuiCXs6hdfhD8xmnkTQPmlwLqXioAHQYbgpwbLHgAr928te6rYAIEIJlO}",
 			},
 		},
 		{
 			Tags: map[string]string{
 				"username":   "root",
-				"passphrase": "{AQAAABAAAAAQmEZaw8Ev9tClXWVQye1TR2KgF3p/wGoYs/TEQCmsxCk=}",
-				"privateKey": "{AQAAABAAAAOATgRVSIzrinNAlvbf/h2yDhN/yvJXpb/KcZCKKmyQqRolE65dHfnhdO1zLEv5Ek3uCXHWgNxSC7j9uk1/y/ckt+SCg8nPD9aOfLhSDpuuw0DO7IUvouPB9pSiW76c5QFzIOFb6Qx0ZPU7LO0VyK83yXnOpSQdbSOMnC9iFtUxSxIF70mSBxVY60SD87xXA4aT3wRtf2YoyAwjf2Y1x/T0GJhvQHBKAqlDRJ7Y9SzI4tLVvVyGidhuz6m2/KIioUVvRHI7kQ5azr+mp7sAXF1O4PGXz6BnvGSwFmmY/ggNnHvTzhoaVDWQm5PKVEp9fB9uX2SuRVYvdJ5/2hSx/woWAsQZezoOzW5d5UBh9NMP6HRCbJnR68/P0yeAw0Kbrb0U/wF5baZ/mwU5AZS4Uy93S5BSxaXmQBNUKu+HNPV3vG9kCX2tYzasuoNX1DTmpGPRc1Osqf1s9PEWzH90wFwQGDrALGvmUdkshqldyDm+RRZbJRF6puBTjBOXyzrFDvpn41xjpT3SabPn7xv45du5qW+95yP/yhjD7jTthsZRgQwkduGv1XLFDZ3Mbh8hqjObLwmcl0QyyDvrLrWA/Kyw1NpZ5U0A/rA46Eh/OZIiQVEk4JAyNewqWGCR+OTvyTK0EYqIZWgpbiSgRmVoUN6gmUdLJCjCPAvJZAZ3DlEzRpnabF6zIKsCsucDhvHn4F3JXpytLz8roVK/pX3VCm5VwkcSogcfKKfRpy+SMVY0LVcRkJCI32LhXduTxYQuzSEUqHz7tz3TP8DzVQeYUWdfMtg+kxQQd466CDGdzvINA+spuwtwQ9ogjZWdKhNr+Kk7fpCMI8SY1b2+ATYKXE/mY/gkNp+rIj9EMpjNWP81rZ7pcEIxycBOzADpPadgocri4cmSYDYmbf1/QYrTcp9jr6OfD6dvLjkJkQ+pKKF522swTxTIYxNitaRLKT7WpynAwBnXJLzwzsKAGw3UBuWuKPI5kcszAVodThAZqODMHLjB8LElWyoZ4+nqmlC+zLh8dJha3I0JEVL3hWp8sOr1S6kFPjahy/vxPYpLARlqBO3ZVLgM01aueMyaAagRWrZC6OgZw0NXW002FC5Vrfm2QaxLYz4JuuUZYsXySNwAaqf5FKGgO9dsm90EboP6dyp9BRi7h5Z8nWaGP9yJp92u6KvUe93UmSfX2ZPHCScRnBNFWQE8nDgCKsnKWenZmOkL}",
+				"passphrase": "{AQAAABAAAAAQYt6YziqpO92++ZbOA5Bbua9x5bqkM7qMxWCfeUMGMyc=}",
+				"privateKey": "{AQAAABAAAAOAU9kOrNdjrQdV8FG1pcYnT3uCmamX8qsPvcB3w9UWzEBjUtydMkiRFKka78Z08kVKOs/3jfKpWP1FdQlzPRhARA0+k7/0+jDkMcIUpcAYDpI0SJlTq6hxxLxd8+59QNeQGCzw5y6fezjpsvBx2/zXPDkgJbkmCHt+B2BlvD5oLI7O8mNxLccKHBvwXmLSevtnublgxtQ6B578eZ8L3GIAQAvAXTAtU1yg/akIvjPSRxfGa9md8SyedAMYzJidFQfGfJISmvSW+BS+78NEtpJNQdNZX9G8Cv2aQPfakRIOIwe/p17y6w/24reDNjjsfX58ODpJaezOTY10nMTuuYpaaOeEk2FXVfXCjiln22GgakHR3gY+Cvz+ZSlgN/QTGEhMHnBojOJYxUqWxD3ogo9gYwvez0mtsMo2H/6F+UM0BJg/U7qN3ru7pYAvjJW0FK7Mv5Jq6j59k7Riuui4AH6m8JCWwNbPZmxy87D3asrAH85Nn6egCl9bAD0Sf5BVNfeiPaB043LkRTlES33x9DopKG3dsSctkQO0XoH3cavgq66UNWikSao3XBLLmVQTGq38ZboEbPikep3mZHeVdafITcV258xhbi7Kw8+Qj3buJYfPReR9agKhyZGMjU1ZWuAShG43GinOjbRge3q9rA2isCk7icyh7pUeVWOS2R6RtMYH/dkNFcCJx0VgZ3FRxuEpLTEYmYfycTW/4lcWvFbeF9JqonDotaZiOPEDciG57fSRsIkp0uGD4iEYL6R8bJTM/tCfbmb3nbKkx5IcgjoZegbmEmK2RcQIOsV79DSo8HkDwLJplVPXCTKFD5soAp0EgszUK/xH8b2xCRAE0/5mPmzSwzOL+Dd2GNtJ9u/LhIneEtUZrPWPMRxH0Q4+4PVbiNv6sBMK+fLV7yJxl0TAl31qdfcwNF6bYm86ubywEVT/Og/SX2//Dn3ERI1ef3SCIrLMEWwNM/d3LhBRZbvBn9/Wm1qnfKBMVpvqyJC4RvkIsHNjpGEttNSYQ6RNQHIkZiJlZkLrKcdMrlz6i9SRzuWstRCg+nU22XSV4qYyIC3fOXuUuzyXiEvfwJlDAWT/y7HWKeXD8eQPACwtof2h9YGr/V+Kbl3L2lzxZwpu5n+DGhWmOThzZqF6scJVMQMdN840leC33lDDfFJHGk2KqzTLCr9Youk9N1lRWQpSJaYvMHcqZS0UsQ6XTjmFx+W+}",
 			},
 		},
 	}
@@ -121,7 +124,7 @@ hDA6SHkmIEPkO5nYhEGMryddRI7rsB4EKJaQ8AnJ7r4=
 )
 
 func Test_decrypts_old_format_credentials(t *testing.T) {
-	secret, _ := os.ReadFile("../test/resources/decrypted/hudson.util.Secret")
+	secret := []byte(decryptedSecret)
 
 	credentials, _ := DecryptCredentials(&oldFormatEncryptedCredentials, secret)
 
@@ -129,7 +132,7 @@ func Test_decrypts_old_format_credentials(t *testing.T) {
 }
 
 func Test_decrypts_new_format_credentials(t *testing.T) {
-	secret, _ := os.ReadFile("../test/resources/decrypted/hudson.util.Secret")
+	secret := []byte(decryptedSecret)
 
 	credentials, _ := DecryptCredentials(&newFormatEncryptedCredentials, secret)
 
