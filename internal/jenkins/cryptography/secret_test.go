@@ -66,22 +66,13 @@ hDA6SHkmIEPkO5nYhEGMryddRI7rsB4EKJaQ8AnJ7r4=
 func Test_encrypts_secret(t *testing.T) {
 	masterKey, _ := os.ReadFile("../test/resources/master.key")
 
-	encryptedHudsonSecret, _ := EncryptHudsonSecret(masterKey, []byte(hudsonSecret))
+	encryptedHudsonSecret := EncryptHudsonSecret(masterKey, []byte(hudsonSecret))
 
 	actualDecryptedHudsonSecret, _ := DecryptHudsonSecret(masterKey, encryptedHudsonSecret)
 
-	assert.Equal(t, []byte(hudsonSecret)[:16], actualDecryptedHudsonSecret)
+	assert.Equal(t, []byte(hudsonSecret), actualDecryptedHudsonSecret)
 	assert.True(t, len(actualDecryptedHudsonSecret) > 1)
 }
-
-// func Test_return_error_when_encrypted_secret_does_not_contain_checksum(t *testing.T) {
-// 	masterKey, _ := os.ReadFile("../test/resources/master.key")
-
-// 	_, err := DecryptHudsonSecret(masterKey, []byte(encryptedHudsonSecretWithNoMagic))
-
-// 	assert.Contains(t, err.Error(), "Error. Decrypted hudson secret does not contain expected checksum.")
-// 	assert.Contains(t, err.Error(), "::::MAGIC::::")
-// }
 
 func Test_decrypts_secret(t *testing.T) {
 	masterKey, _ := os.ReadFile("../test/resources/master.key")
@@ -91,6 +82,6 @@ func Test_decrypts_secret(t *testing.T) {
 
 	actualDecryptedHudsonSecret, _ := DecryptHudsonSecret(masterKey, encryptedSecret)
 
-	assert.Equal(t, expectedDecryptedHudsonSecret[:16], actualDecryptedHudsonSecret)
+	assert.Equal(t, expectedDecryptedHudsonSecret, actualDecryptedHudsonSecret)
 	assert.True(t, len(actualDecryptedHudsonSecret) > 1)
 }

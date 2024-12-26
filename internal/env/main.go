@@ -2,18 +2,25 @@ package env
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 func LoadEnvVars() {
-	exec, err := os.Executable()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error getting home directory: %v", err)
 	}
-	path := filepath.Dir(exec)
-	os.Setenv("JENKINS_HOME", path)
-	os.Setenv("WORKSPACE", filepath.Join(path, "workspace"))
+	
+	appDir := os.Getenv("JENKINS_HOME")
+	if appDir == "" {
+		appDir = homeDir
+		os.Setenv("JENKINS_HOME", appDir)
+	}
+	if os.Getenv("WORKSPACE") == "" {
+		os.Setenv("WORKSPACE", filepath.Join(appDir, "workspace"))
+	}
 
 	printEnv()
 }

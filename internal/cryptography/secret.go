@@ -5,7 +5,9 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -15,8 +17,20 @@ type (
 	}
 )
 
+// GenerateKey generate a keyLength-character key using cryptographic random generator 
+func GenerateKey(keyLength int) []byte {
+	masterKey := make([]byte, keyLength)
+	_, err := rand.Read(masterKey)
+	if err != nil {
+		panic(fmt.Errorf("error generating master key %w", err))
+	}
+
+	encodedKey := hex.EncodeToString(masterKey)
+	return []byte(encodedKey)
+}
+
 // Encrypt encrypts plaintext using AES-GCM
-func (secret *Secret) Encrypt(plaintext, key []byte) (string, error) {
+func (secret *Secret) encryptAes128Gcm(plaintext, key []byte) (string, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -38,7 +52,7 @@ func (secret *Secret) Encrypt(plaintext, key []byte) (string, error) {
 }
 
 // Decrypt decrypts ciphertext using AES-GCM
-func (secret *Secret) Decrypt(encryptedBase64 string, key []byte) (string, error) {
+func (secret *Secret) decryptAes128Gcm(encryptedBase64 string, key []byte) (string, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(encryptedBase64)
 	if err != nil {
 		return "", err

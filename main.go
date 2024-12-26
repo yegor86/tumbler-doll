@@ -17,7 +17,8 @@ import (
 
 func main() {
 	env.LoadEnvVars()
-	cryptography.InitCrypto()
+	crypto := cryptography.GetInstance()
+	crypto.LoadOrSeedCrypto()
 
 	pluginManager := plugins.GetInstance()
 	defer pluginManager.UnregisterAll()

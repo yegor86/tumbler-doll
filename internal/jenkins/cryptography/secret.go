@@ -54,7 +54,7 @@ func DecryptHudsonSecret(masterKey []byte, hudsonSecret []byte) ([]byte, error) 
 		return nil, err
 	}
 	
-	return decryptedSecret[:16], nil
+	return decryptedSecret, nil
 	// if secretContainsChecksum(decryptedSecret) {
 	// 	return decryptedSecret[:16], nil
 	// } else {
@@ -62,12 +62,12 @@ func DecryptHudsonSecret(masterKey []byte, hudsonSecret []byte) ([]byte, error) 
 	// }
 }
 
-func EncryptHudsonSecret(masterKey []byte, hudsonSecret []byte) ([]byte, error) {
+func EncryptHudsonSecret(masterKey []byte, hudsonSecret []byte) []byte {
 	hashedMasterKey := hashMasterKey(masterKey)
-	hudsonSecret = append(hudsonSecret, []byte(magicChecksum)...)
+	// hudsonSecret = append(hudsonSecret, []byte(magicChecksum)...)
 	decryptedSecret := encryptAes128Ecb(hudsonSecret, hashedMasterKey)
 	
-	return decryptedSecret, nil
+	return decryptedSecret
 }
 
 func createError(decryptedSecret []byte) error {
