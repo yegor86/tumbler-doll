@@ -74,11 +74,12 @@ func Test_encrypts_secret(t *testing.T) {
 	assert.True(t, len(actualDecryptedHudsonSecret) > 1)
 }
 
-func Test_decrypts_secret(t *testing.T) {
+func Test_decrypts_secret_with_magicChecksum(t *testing.T) {
 	masterKey, _ := os.ReadFile("../test/resources/master.key")
  	encryptedSecret, _ := os.ReadFile("../test/resources/hudson.util.Secret")
 	// encryptedSecret := []byte(encryptedHudsonSecretWithNoMagic)
 	expectedDecryptedHudsonSecret := []byte(hudsonSecret)
+	expectedDecryptedHudsonSecret = append(expectedDecryptedHudsonSecret, []byte(magicChecksum)...)
 
 	actualDecryptedHudsonSecret, _ := DecryptHudsonSecret(masterKey, encryptedSecret)
 
