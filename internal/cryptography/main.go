@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	customCryptoLib "github.com/yegor86/tumbler-doll/internal/jenkins/cryptography"
+	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 type Cryptography struct {
 	masterKeyData []byte
 	secretKeyData []byte
+	credentials   []xml.Credential
 }
 
 var (
@@ -34,7 +36,7 @@ func GetInstance() *Cryptography {
 func (crypto *Cryptography) LoadOrSeedCrypto() error {
 
 	if os.Getenv("JENKINS_HOME") == "" {
-		log.Fatalln("JENKINS_HOME environment variable must be initialized")
+		log.Fatal("JENKINS_HOME environment variable must be initialized\n")
 	}
 
 	secretsPath := filepath.Join(os.Getenv("JENKINS_HOME"), "secrets")
@@ -54,19 +56,31 @@ func (crypto *Cryptography) LoadOrSeedCrypto() error {
 		log.Fatalf("failed to decrypt hudson secret: %v\n", err)
 	}
 
-	return nil
+	credentialsPath := filepath.Join(os.Getenv("JENKINS_HOME"), "credentials.xml")
+	credsData, err := os.ReadFile(credentialsPath)
+	if err != nil {
+		log.Printf("error loading credentials: %v\n", err)
+		return err
+	}
+	credentials, err := xml.ParseCredentialsXml(credsData)
+	if err != nil {
+		return err
+	}
+	crypto.credentials, err = customCryptoLib.DecryptCredentials(credentials, crypto.secretKeyData[:16])
+
+	return err
 }
 
-func loadOrSeed(fileName string, keyGenerator func()[]byte) []byte {
+func loadOrSeed(fileName string, keyGenerator func() []byte) []byte {
 	keyPath := filepath.Join(os.Getenv("JENKINS_HOME"), "secrets", fileName)
-	
+
 	_, err := os.Stat(keyPath)
 	if err != nil && os.IsNotExist(err) {
 		os.WriteFile(keyPath, keyGenerator(), defaultFileMode)
-	} else if (err != nil) {
+	} else if err != nil {
 		log.Fatalf("error loading key: %v\n", err)
 	}
-	
+
 	keyData, err := os.ReadFile(keyPath)
 	if err != nil {
 		log.Fatalf("error loading key: %v\n", err)

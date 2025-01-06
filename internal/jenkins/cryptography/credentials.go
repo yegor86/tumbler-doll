@@ -35,11 +35,11 @@ import (
   This is some next level reverse engineering.
   Kudos to http://xn--thibaud-dya.fr/jenkins_credentials.html
 */
-func DecryptCredentials(credentials *[]xml.Credential, secret []byte) ([]xml.Credential, error) {
-	decryptedCredentials := make([]xml.Credential, len(*credentials))
-	copy(decryptedCredentials, *credentials)
+func DecryptCredentials(credentials []xml.Credential, secret []byte) ([]xml.Credential, error) {
+	decryptedCredentials := make([]xml.Credential, len(credentials))
+	copy(decryptedCredentials, credentials)
 
-	for i, credential := range *credentials {
+	for i, credential := range credentials {
 		for key, value := range credential.Tags {
 			if isBase64EncodedSecret(value) {
 				encodedCipher := stripBrackets(value)

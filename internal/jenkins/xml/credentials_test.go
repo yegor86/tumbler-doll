@@ -59,5 +59,5 @@ func Test_reads_credentials_from_xml_file(t *testing.T) {
 
 	actualCredentials, _ := ParseCredentialsXml(credentialsXml)
 
-	assert.Equal(t, expectedCredentials, *actualCredentials)
+	assert.Equal(t, expectedCredentials, actualCredentials)
 }

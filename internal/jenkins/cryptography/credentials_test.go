@@ -126,7 +126,7 @@ hDA6SHkmIEPkO5nYhEGMryddRI7rsB4EKJaQ8AnJ7r4=
 func Test_decrypts_old_format_credentials(t *testing.T) {
 	secret := []byte(decryptedSecret)
 
-	credentials, _ := DecryptCredentials(&oldFormatEncryptedCredentials, secret)
+	credentials, _ := DecryptCredentials(oldFormatEncryptedCredentials, secret)
 
 	assert.Equal(t, credentials, oldFormatDecryptedCredentials)
 }
@@ -134,7 +134,7 @@ func Test_decrypts_old_format_credentials(t *testing.T) {
 func Test_decrypts_new_format_credentials(t *testing.T) {
 	secret := []byte(decryptedSecret)
 
-	credentials, _ := DecryptCredentials(&newFormatEncryptedCredentials, secret)
+	credentials, _ := DecryptCredentials(newFormatEncryptedCredentials, secret)
 
 	assert.Equal(t, credentials, newFormatDecryptedCredentials)
 }

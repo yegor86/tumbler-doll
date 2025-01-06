@@ -40,12 +40,12 @@ XML version is ignored as I could no find a parser which could handle xml 1.0+
 Jenkins credentials.xml is using xml 1.1 but it does not seem to be using any of the new features.
 With xml 1.0+ this can eventually blow up.
 */
-func ParseCredentialsXml(credentialsXml []byte) (*[]Credential, error) {
+func ParseCredentialsXml(credentialsXml []byte) ([]Credential, error) {
 	credentialsXpaths := []string{"//java.util.concurrent.CopyOnWriteArrayList/*", "//list/*"}
 	credentials := make([]Credential, 0)
 	credentialsDocument, err := parseXml(credentialsXml)
 	if err != nil {
-		return &credentials, err
+		return credentials, err
 	}
 	for _, credentialsXpath := range credentialsXpaths {
 		for _, credentialNode := range credentialsDocument.FindElements(credentialsXpath) {
@@ -58,7 +58,7 @@ func ParseCredentialsXml(credentialsXml []byte) (*[]Credential, error) {
 			credentials = append(credentials, *credential)
 		}
 	}
-	return &credentials, nil
+	return credentials, nil
 }
 
 /*
