@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
 type GitRepo struct {
@@ -17,7 +18,7 @@ type GitRepo struct {
 	Branch         string
 	CloneDir       string
 	Changelog      bool
-	Credentials    string
+	Auth    	   transport.AuthMethod
 	Poll           bool
 	ProgressWriter io.Writer
 }
@@ -39,6 +40,7 @@ func (r *GitRepo) cloneRepo() error {
 		URL:           r.Url,
 		Progress:      r.ProgressWriter,
 		ReferenceName: plumbing.NewBranchReferenceName(r.Branch),
+		Auth: r.Auth,
 	}
 
 	_, err := git.PlainClone(r.CloneDir, false, options)

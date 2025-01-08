@@ -32,6 +32,15 @@ func GetInstance() *Cryptography {
 	return instance
 }
 
+func (crypto *Cryptography) GetCredentialsById(credentialsId string) *xml.Credential {
+	for _, creds := range crypto.credentials {
+		if _, ok := creds.Tags["id"]; ok && creds.Tags["id"] == credentialsId {
+			return &creds
+		}
+	}
+	return nil
+}
+
 // LoadOrSeedCrypto load or seed encrypted files
 func (crypto *Cryptography) LoadOrSeedCrypto() error {
 
@@ -66,6 +75,7 @@ func (crypto *Cryptography) LoadOrSeedCrypto() error {
 	if err != nil {
 		return err
 	}
+	// TODO: check compatibility
 	crypto.credentials, err = customCryptoLib.DecryptCredentials(credentials, crypto.secretKeyData[:16])
 
 	return err
