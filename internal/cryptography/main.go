@@ -17,7 +17,7 @@ const (
 type Cryptography struct {
 	masterKeyData []byte
 	secretKeyData []byte
-	credentials   []xml.Credential
+	Credentials   []xml.Credential
 }
 
 var (
@@ -33,7 +33,7 @@ func GetInstance() *Cryptography {
 }
 
 func (crypto *Cryptography) GetCredentialsById(credentialsId string) *xml.Credential {
-	for _, creds := range crypto.credentials {
+	for _, creds := range crypto.Credentials {
 		if _, ok := creds.Tags["id"]; ok && creds.Tags["id"] == credentialsId {
 			return &creds
 		}
@@ -76,7 +76,7 @@ func (crypto *Cryptography) LoadOrSeedCrypto() error {
 		return err
 	}
 	// TODO: check compatibility
-	crypto.credentials, err = customCryptoLib.DecryptCredentials(credentials, crypto.secretKeyData[:16])
+	crypto.Credentials, err = customCryptoLib.DecryptCredentials(credentials, crypto.secretKeyData[:16])
 
 	return err
 }

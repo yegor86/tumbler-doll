@@ -34,7 +34,7 @@ var (
 			}
 			var privateKey = ""
 			if _, ok := args["privateKey"]; ok {
-				passphrase = args["privateKey"]
+				privateKey = args["privateKey"]
 			}
 			var username = "git"
 			if _, ok := args["username"]; ok {
@@ -75,6 +75,7 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 	}
 
 	g.logger.Info("PluginImpl Checkout %s...", url)
+	g.logger.Info("PluginImpl auth method %v...", authMethod)
 
 	cloneDir, err := shared.DeriveCloneDir(url)
 	if err != nil {
