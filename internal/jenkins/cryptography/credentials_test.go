@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2019 Andrzej Rehmann
+# Copyright (c) 2019 Andrzej Rehmann
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,8 @@ package cryptography
 import (
 	"testing"
 
-	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 	"github.com/stretchr/testify/assert"
+	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 )
 
 const (
@@ -69,20 +69,20 @@ var (
 		{
 			Tags: map[string]string{
 				"username": "xfireadmin",
-				"password": "AQAAABAAAAAQTcjjf6+TSYQKfKW5GGFXONqrEhCYnQ1solOK6wQMfTc=",
+				"password": "{AQAAABAAAAAQTcjjf6+TSYQKfKW5GGFXONqrEhCYnQ1solOK6wQMfTc=}",
 			},
 		},
 		{
 			Tags: map[string]string{
 				"username": "gitlabadmin",
-				"password": "{AQAAABAAAAAgyJpDg7KJuiCXs6hdfhD8xmnkTQPmlwLqXioAHQYbgpwbLHgAr928te6rYAIEIJlO}",
+				"password": "{AQAAABAAAAAgTcjjf6+TSYQKfKW5GGFXOF6x26+HXozYUgVbhYE7Xob3Z52sEAJRbydS3dn2yoL3}",
 			},
 		},
 		{
 			Tags: map[string]string{
 				"username":   "root",
-				"passphrase": "{AQAAABAAAAAQYt6YziqpO92++ZbOA5Bbua9x5bqkM7qMxWCfeUMGMyc=}",
-				"privateKey": "{AQAAABAAAAOAU9kOrNdjrQdV8FG1pcYnT3uCmamX8qsPvcB3w9UWzEBjUtydMkiRFKka78Z08kVKOs/3jfKpWP1FdQlzPRhARA0+k7/0+jDkMcIUpcAYDpI0SJlTq6hxxLxd8+59QNeQGCzw5y6fezjpsvBx2/zXPDkgJbkmCHt+B2BlvD5oLI7O8mNxLccKHBvwXmLSevtnublgxtQ6B578eZ8L3GIAQAvAXTAtU1yg/akIvjPSRxfGa9md8SyedAMYzJidFQfGfJISmvSW+BS+78NEtpJNQdNZX9G8Cv2aQPfakRIOIwe/p17y6w/24reDNjjsfX58ODpJaezOTY10nMTuuYpaaOeEk2FXVfXCjiln22GgakHR3gY+Cvz+ZSlgN/QTGEhMHnBojOJYxUqWxD3ogo9gYwvez0mtsMo2H/6F+UM0BJg/U7qN3ru7pYAvjJW0FK7Mv5Jq6j59k7Riuui4AH6m8JCWwNbPZmxy87D3asrAH85Nn6egCl9bAD0Sf5BVNfeiPaB043LkRTlES33x9DopKG3dsSctkQO0XoH3cavgq66UNWikSao3XBLLmVQTGq38ZboEbPikep3mZHeVdafITcV258xhbi7Kw8+Qj3buJYfPReR9agKhyZGMjU1ZWuAShG43GinOjbRge3q9rA2isCk7icyh7pUeVWOS2R6RtMYH/dkNFcCJx0VgZ3FRxuEpLTEYmYfycTW/4lcWvFbeF9JqonDotaZiOPEDciG57fSRsIkp0uGD4iEYL6R8bJTM/tCfbmb3nbKkx5IcgjoZegbmEmK2RcQIOsV79DSo8HkDwLJplVPXCTKFD5soAp0EgszUK/xH8b2xCRAE0/5mPmzSwzOL+Dd2GNtJ9u/LhIneEtUZrPWPMRxH0Q4+4PVbiNv6sBMK+fLV7yJxl0TAl31qdfcwNF6bYm86ubywEVT/Og/SX2//Dn3ERI1ef3SCIrLMEWwNM/d3LhBRZbvBn9/Wm1qnfKBMVpvqyJC4RvkIsHNjpGEttNSYQ6RNQHIkZiJlZkLrKcdMrlz6i9SRzuWstRCg+nU22XSV4qYyIC3fOXuUuzyXiEvfwJlDAWT/y7HWKeXD8eQPACwtof2h9YGr/V+Kbl3L2lzxZwpu5n+DGhWmOThzZqF6scJVMQMdN840leC33lDDfFJHGk2KqzTLCr9Youk9N1lRWQpSJaYvMHcqZS0UsQ6XTjmFx+W+}",
+				"passphrase": "{AQAAABAAAAAQTcjjf6+TSYQKfKW5GGFXODUpsDKtsf3FhdpoNK1PC2I=}",
+				"privateKey": "{AQAAABAAAAOATcjjf6+TSYQKfKW5GGFXOD2w2E2B6Nn3nThLPLC2L8Fvg4MgY4Rkx9gn17nTelvSMJ3/YKozZrrmXQ9C0IJ67aA0F4ptCosn9UYxg6WfHZnQcqud+JtYBAs/sH3/eGPHhKuZmVqDkhy9U2S8b7NimLSHvRGaAl0NcIIZGoeXm9b8OrokF2YS00KWbmfW0wARsQDSUOsFaxCdEe1pUBTTyPf8MBr6WJZ0DDnpW5jVF6DUoJCwJPX1PyGntisu5y8DsbDguhjsYGGl0ojh1Shkfwvrphjz4n+lOZFiFl81eOV6wT2cyoChPCPGsjV+eHz9DOh5Br1noQ1HhQryD5rWT0EahYJFTOjQNbPPMwqFO9QIjB9ME/UvZuVzGb+cx/46eWASmatTcxpbsZKGMxgWodSvby0SzI0T/nlAlCKWzALtGF52JHK1KGLjrbrtX8yJltZqqqridWJfF+kJbmcAA4mR31IpMtt+pWd+8usWWx+AZrfHP/UBWb6pbndUhR6ew6645PiUe+6gwc9AoWvvkG92naUr7JQTtRBAuheVdpgSq8Haco6UPnf/+RyVe37qLJYmBtT33WDsRVy969B6uhARO468mzeM2t9mLiRBq7/Tvg9IIUh2GhevV+pYAVcnIPVKf4ElW1ZOrTpUs2xMqTmB3YuttwHp2gnifPnubbO1qvbbCBW+0KT+fVZSRgNBZ1+kPGz7MBJAK82CmDP1bxe4ulX7nG4ZlVtCQykfhZeYckyBNVtQU5j7ER2TY833Zi1jjIsdgoULlSOat8VDYZLqoTnVmrIzDoMbK48SL1n0YvjochXNjZoP1cDW57kcg0KlgvPTwYHpz3MDaHzQ8l0BblPn3Px6sCybZFEflBj5yjFAvl7twKkNRbHJvdf+aIxwUOVSzO1vABpqc/Zd8ASHRtHyUTlXOYy49RjfHq2iI/aFScYQpTpvNj6A3lm6GSl5ARMhBV/Jmnp2X5uwwyLGUY7/Ptd8tnw4ruJZCLtXaHvBC3IdHrmX0W0iIPcIA33fVx0NFyUoNH1HGRja8dmwMbwslc6o3nsbEMBEAD0FjA5tihJ6EBzRLxiH4nqcAJGQZoRllhi76I1aSavkgl2u6jhVPfIJSwgvjEKueHyoxB3yrXKQ1qth0bzi6boIry73wdYx5zKlFdvLhPOTeeEm+9fkz4Yr0TnNu/uf295EJLpyfak5f3Z97Z+wFovi}",
 			},
 		},
 	}
@@ -137,4 +137,19 @@ func Test_decrypts_new_format_credentials(t *testing.T) {
 	credentials, _ := DecryptCredentials(newFormatEncryptedCredentials, secret)
 
 	assert.Equal(t, credentials, newFormatDecryptedCredentials)
+}
+
+func Test_encrypts_new_format_credentials(t *testing.T) {
+	iv := []byte{77, 200, 227, 127, 175, 147, 73, 132, 10, 124, 165, 185, 24, 97, 87, 56}
+	secret := []byte(decryptedSecret)
+
+	encrypt := func(plaintext, key []byte) ([]byte, error) {
+		return _encryptAes128Cbc(plaintext, key, iv)
+	}
+	actualCredentials, err := EncryptCredentials(newFormatDecryptedCredentials, secret, encrypt)
+	if err != nil {
+		t.Fatalf("Failed to encrypt credentials xml: %v", err)
+	}
+
+	assert.Equal(t, newFormatEncryptedCredentials, actualCredentials)
 }

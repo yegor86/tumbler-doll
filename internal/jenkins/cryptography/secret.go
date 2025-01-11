@@ -146,6 +146,10 @@ func encryptAes128Ecb(plaintext []byte, key []byte) []byte {
 
 // encryptAes128Cbc encrypts the plaintext using AES-128 in CBC mode.
 func encryptAes128Cbc(plaintext, key []byte) ([]byte, error) {
+	return _encryptAes128Cbc(plaintext, key, nil)
+}
+
+func _encryptAes128Cbc(plaintext, key []byte, iv []byte) ([]byte, error) {
     if len(key) != 16 {
         return nil, errors.New("key length must be 16 bytes for AES-128")
     }
@@ -157,10 +161,11 @@ func encryptAes128Cbc(plaintext, key []byte) ([]byte, error) {
 
     plaintext = padToBlockSize(plaintext, aes.BlockSize)
 
-	// Generate a random IV
-	iv := make([]byte, aes.BlockSize)
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
+	if iv == nil { // Generate a random IV
+		iv = make([]byte, aes.BlockSize)
+		if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+			return nil, err
+		}
 	}
 
 	// Encrypt the plaintext

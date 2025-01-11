@@ -34,6 +34,16 @@ type Credential struct {
 	Tags map[string]string
 }
 
+func DeepCopy(src[] Credential) []Credential {
+	dest := make([]Credential, len(src))
+    for i, item := range src {
+        dest[i] = Credential{
+            Tags: deepCopyMapBasic(item.Tags),  
+        }
+    }
+    return dest
+}
+
 /*
 Converts credentials.xml into a slice of structs with all fields reduced.
 XML version is ignored as I could no find a parser which could handle xml 1.0+
@@ -59,6 +69,14 @@ func ParseCredentialsXml(credentialsXml []byte) ([]Credential, error) {
 		}
 	}
 	return credentials, nil
+}
+
+func deepCopyMapBasic(src map[string]string) map[string]string {
+    dest := make(map[string]string)
+    for key, value := range src {
+        dest[key] = value
+    }
+    return dest
 }
 
 /*

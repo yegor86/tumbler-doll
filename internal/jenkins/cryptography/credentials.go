@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2019 Andrzej Rehmann
+# Copyright (c) 2019 Andrzej Rehmann
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,13 +31,12 @@ import (
 	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 )
 
-/*
-  This is some next level reverse engineering.
-  Kudos to http://xn--thibaud-dya.fr/jenkins_credentials.html
-*/
+var (
+	keywords = []string{"pass", "private"}
+)
+
 func DecryptCredentials(credentials []xml.Credential, secret []byte) ([]xml.Credential, error) {
-	decryptedCredentials := make([]xml.Credential, len(credentials))
-	copy(decryptedCredentials, credentials)
+	decryptedCredentials := xml.DeepCopy(credentials)
 
 	for i, credential := range credentials {
 		for key, value := range credential.Tags {
@@ -60,22 +59,53 @@ func DecryptCredentials(credentials []xml.Credential, secret []byte) ([]xml.Cred
 	return decryptedCredentials, nil
 }
 
+func EncryptCredentials(decryptedCredentials []xml.Credential, secret []byte, _encrypt func([]byte, []byte) ([]byte, error)) ([]xml.Credential, error) {
+	credentials := xml.DeepCopy(decryptedCredentials)
+
+	containsSubstr := func(str string) bool {
+		for _, kw := range keywords {
+			if strings.Contains(str, kw) {
+				return true
+			}
+		}
+		return false
+	}
+
+	for i, encryptedCredential := range decryptedCredentials {
+		for key, text := range encryptedCredential.Tags {
+
+			if !containsSubstr(key) {
+				continue
+			}
+
+			cipher, err := _encrypt([]byte(text), secret)
+			if err != nil {
+				return nil, err
+			}
+
+			encodedCipher := base64Encode(string(cipher))
+			credentials[i].Tags[key] = "{" + string(encodedCipher) + "}"
+		}
+	}
+	return credentials, nil
+}
+
 /*
-  New format of declaring a field to be a "base64 decoded secret" is by using {} brackets.
-  Example:
+New format of declaring a field to be a "base64 decoded secret" is by using {} brackets.
+Example:
 
-    <password>{AQAAABAAAAAgPT7JbBVgyWiivobt0CJEduLyP0lB3uyTj+D5WBvVk6jyG6BQFPYGN4Z3VJN2JLDm}</password>
+	<password>{AQAAABAAAAAgPT7JbBVgyWiivobt0CJEduLyP0lB3uyTj+D5WBvVk6jyG6BQFPYGN4Z3VJN2JLDm}</password>
 
-  Old format does not use the {} brackets.
-  Instead jenkins seems to be usually suffixing the encoding with '=' sign.
-  Example:
+Old format does not use the {} brackets.
+Instead jenkins seems to be usually suffixing the encoding with '=' sign.
+Example:
 
-     <password>B+4pJjkJXD+pzyT9lcq8M8vF+p5YU4HmWy+MWldEdG4=</password>
+	<password>B+4pJjkJXD+pzyT9lcq8M8vF+p5YU4HmWy+MWldEdG4=</password>
 
-  I'm not sure how to distinguish other encoded secrets from the "old days of jenkins".
-  I don't want to comprehend Jenkins code from 4 years ago just to handle some edge cases.
-  I can't try to decode all values because there are some phrases which
-  would be false positive e.g. "root" (which is a valid base64 encoding)
+I'm not sure how to distinguish other encoded secrets from the "old days of jenkins".
+I don't want to comprehend Jenkins code from 4 years ago just to handle some edge cases.
+I can't try to decode all values because there are some phrases which
+would be false positive e.g. "root" (which is a valid base64 encoding)
 */
 func isBase64EncodedSecret(text string) bool {
 	if isBracketed(text) {
@@ -115,6 +145,11 @@ func base64Decode(encoded string) ([]byte, error) {
 	return decoded, nil
 }
 
+func base64Encode(cipher string) []byte {
+	encoded := base64.StdEncoding.EncodeToString([]byte(cipher))
+	return []byte(encoded)
+}
+
 func textBetweenBrackets(text string) string {
 	return regexp.MustCompile("{(.*?)}").FindStringSubmatch(text)[1]
 }
@@ -124,4 +159,8 @@ func decrypt(cipher []byte, secret []byte) ([]byte, error) {
 		return decryptAes128Cbc(cipher, secret)
 	}
 	return decryptAes128Ecb(cipher, secret)
+}
+
+func encrypt(plaintext []byte, secret []byte) ([]byte, error) {
+	return encryptAes128Cbc(plaintext, secret)
 }
