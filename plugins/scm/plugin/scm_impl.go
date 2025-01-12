@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/go-git/go-git/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
@@ -18,6 +17,7 @@ import (
 
 type ScmPluginImpl struct {
 	logger hclog.Logger
+	git    Git
 }
 
 var (
@@ -56,7 +56,7 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("url is missing")
 	}
 	if _, ok := args["branch"]; !ok {
-		return "", fmt.Errorf("branch is missing")
+		return "", fmt.Errorf("git branch is missing")
 	}
 
 	url := args["url"].(string)
@@ -66,6 +66,10 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 		credentialsId := args["credentialsId"].(string)
 		crypto := cryptography.GetInstance()
 		credentials = crypto.GetCredentialsById(credentialsId)
+		if credentials == nil {
+			return "", fmt.Errorf("credentials not found by id %s", credentialsId)
+		}
+
 		g.logger.Info("PluginImpl credentialsId:", credentialsId)
 		g.logger.Info("PluginImpl credentials list size:", len(crypto.Credentials))
 	}
@@ -77,25 +81,9 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 	}
 
 	g.logger.Info("PluginImpl Checkout %s...", url)
-	g.logger.Info("PluginImpl auth method %v...", authMethod)
+	g.logger.Info("PluginImpl auth method %s:%s...", authMethod.Name(), authMethod.String())
 
-	cloneDir, err := shared.DeriveCloneDir(url)
-	if err != nil {
-		return "", err
-	}
-
-	repo := &shared.GitRepo{
-		Url:       url,
-		Branch:    branch,
-		CloneDir:  filepath.Join(os.Getenv("WORKSPACE"), cloneDir),
-		Changelog: true,
-		Auth:      authMethod,
-		Poll:      true,
-		ProgressWriter: g.logger.StandardWriter(&hclog.StandardLoggerOptions{
-			InferLevels: true,
-		}),
-	}
-	if err := repo.CloneOrPull(); err != nil {
+	if err := g.git.CloneOrPull(url, branch, authMethod); err != nil {
 		return "", err
 	}
 
@@ -120,6 +108,13 @@ func main() {
 
 	scmImpl := &ScmPluginImpl{
 		logger: logger,
+		git: &GitRepo{
+			Changelog: true,
+			Poll: true,
+			ProgressWriter: logger.StandardWriter(&hclog.StandardLoggerOptions{
+				InferLevels: true,
+			}),
+		},
 	}
 
 	var pluginMap = map[string]plugin.Plugin{

@@ -1,11 +1,12 @@
-package shared
+package main
 
 import (
 	"fmt"
 	"io"
-	"os"
 	urlLib "net/url"
+	"os"
 	pathLib "path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -14,44 +15,54 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport"
 )
 
+type Git interface {
+	CloneOrPull(url string, branch string, authMethod transport.AuthMethod) error
+}
+
 type GitRepo struct {
-	Url            string
-	Branch         string
-	CloneDir       string
+	// Url            string
+	// Branch         string
+	// CloneDir       string
 	Changelog      bool
-	Auth    	   transport.AuthMethod
+	// Auth    	   transport.AuthMethod
 	Poll           bool
 	ProgressWriter io.Writer
 }
 
-func (r *GitRepo) CloneOrPull() error {
-	if _, err := os.Stat(r.CloneDir); os.IsNotExist(err) {
+func (r *GitRepo) CloneOrPull(url string, branch string, authMethod transport.AuthMethod) error {
+	cloneDir, err := DeriveCloneDir(url)
+	if err != nil {
+		return err
+	}
+	cloneDir = filepath.Join(os.Getenv("WORKSPACE"), cloneDir)
+
+	if _, err := os.Stat(cloneDir); os.IsNotExist(err) {
 		// Clone the repository
 		fmt.Println("Cloning repository...")
-		return r.cloneRepo()
+		return r.cloneRepo(cloneDir, url, branch, authMethod)
 	}
 
 	// Pull changes in the existing repository
 	fmt.Println("Pulling changes...")
-	return r.pullRepo()
+	return r.pullRepo(cloneDir, branch, authMethod)
 }
 
-func (r *GitRepo) cloneRepo() error {
+func (r *GitRepo) cloneRepo(cloneDir string, url string, branch string, authMethod transport.AuthMethod) error {
 	options := &git.CloneOptions{
-		URL:           r.Url,
+		URL:           url,
 		Progress:      r.ProgressWriter,
-		ReferenceName: plumbing.NewBranchReferenceName(r.Branch),
-		Auth: r.Auth,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		Auth: authMethod,
 	}
 
-	_, err := git.PlainClone(r.CloneDir, false, options)
+	_, err := git.PlainClone(cloneDir, false, options)
 	return err
 }
 
-func (r *GitRepo) pullRepo() error {
+func (r *GitRepo) pullRepo(cloneDir string, branch string, authMethod transport.AuthMethod) error {
 
 	// Open the existing repository
-	repo, err := git.PlainOpen(r.CloneDir)
+	repo, err := git.PlainOpen(cloneDir)
 	if err != nil {
 		return fmt.Errorf("failed to open repository: %w", err)
 	}
@@ -65,8 +76,9 @@ func (r *GitRepo) pullRepo() error {
 	// Pull changes
 	options := &git.PullOptions{
 		RemoteName:    "origin",
-		ReferenceName: plumbing.NewBranchReferenceName(r.Branch),
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		Progress:      r.ProgressWriter,
+		Auth: authMethod,
 	}
 
 	err = worktree.Pull(options)

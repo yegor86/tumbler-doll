@@ -6,10 +6,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/hashicorp/go-hclog"
 	"github.com/yegor86/tumbler-doll/internal/cryptography"
 	"github.com/yegor86/tumbler-doll/internal/jenkins/xml"
 )
+
+type GitMock struct {
+}
+
+func (r *GitMock) CloneOrPull(url string, branch string, authMethod transport.AuthMethod) error {
+    return nil
+}
 
 func Test_checkout_ssh_auth(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
@@ -20,6 +28,7 @@ func Test_checkout_ssh_auth(t *testing.T) {
 
 	scm := &ScmPluginImpl{
 		logger: hclog.Default(),
+		git: &GitMock{},
 	}
 
 	crypto := cryptography.GetInstance()
