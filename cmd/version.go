@@ -4,15 +4,12 @@ import (
 	"fmt"
 
 	cli "github.com/spf13/cobra"
-
-	"github.com/snowzach/golib/version"
 )
 
 var (
-	// Executable is overridden by Makefile with executable name
-	Executable = "NoExecutable"
-	// GitVersion is overridden by Makefile with git information
-	GitVersion = "NoGitVersion"
+	// Executable and GitVersion are overridden by Makefile with executable name
+	Executable = "__Version__"
+	GitVersion = "__Version__"
 )
 
 // Version command
@@ -20,9 +17,9 @@ func init() {
 	rootCmd.AddCommand(&cli.Command{
 		Use:   "version",
 		Short: "Show version",
-		Long:  `Show version`,
+		Long:  `Show current version`,
 		Run: func(cmd *cli.Command, args []string) {
-			fmt.Println(version.Executable + " - " + version.GitVersion)
+			fmt.Println(Executable + " - " + GitVersion)
 		},
 	})
 }

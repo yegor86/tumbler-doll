@@ -63,26 +63,6 @@ type Config struct {
 			IgnorePaths []string `yaml:"ignore_paths"`
 		} `yaml:"metrics"`
 	} `yaml:"server"`
-
-	Database struct {
-		Username            string `yaml:"username"`
-		Password            string `yaml:"password"`
-		Host                string `yaml:"host"`
-		Port                int    `yaml:"port"`
-		Database            string `yaml:"database"`
-		AutoCreate          bool   `yaml:"auto_create"`
-		Schema              string `yaml:"schema"`
-		SearchPath          string `yaml:"search_path"`
-		SSLMode             string `yaml:"sslmode"`
-		SSLCert             string `yaml:"sslcert"`
-		SSLKey              string `yaml:"sslkey"`
-		SSLRootCert         string `yaml:"sslrootcert"`
-		Retries             int    `yaml:"retries"`
-		SleepBetweenRetries string `yaml:"sleep_between_retries"` // Can be parsed as duration
-		MaxConnections      int    `yaml:"max_connections"`
-		LogQueries          bool   `yaml:"log_queries"`
-		WipeConfirm         bool   `yaml:"wipe_confirm"`
-	} `yaml:"database"`
 }
 
 func Load() (*koanf.Koanf, *Config, error) {

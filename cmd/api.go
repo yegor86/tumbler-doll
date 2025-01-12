@@ -9,8 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
 	cli "github.com/spf13/cobra"
 
 	wf_client "go.temporal.io/sdk/client"
@@ -27,7 +25,7 @@ var (
 		Use:   "api",
 		Short: "Start API",
 		Long:  `Start API`,
-		Run: func(cmd *cli.Command, args []string) { // Initialize the databse
+		Run: func(cmd *cli.Command, args []string) {
 			var err error
 
 			client, err := wf_client.Dial(wf_client.Options{})
@@ -42,14 +40,6 @@ var (
 				log.Fatalf("Router config error: %v", err)
 			}
 
-			// Create the database
-			// db, err := newDatabase()
-			_, err = newDatabase()
-			if err != nil {
-				log.Fatalf("Database config error: %v", err)
-			}
-
-			
 			router.Get("/upload", handler.UploadForm)
 			router.Post("/uploadfile", handler.UploadFile(client))
 
@@ -63,7 +53,7 @@ var (
 			if err = s.ListenAndServe(); err != nil {
 				log.Fatalf("Server error: %v", err)
 			}
-			
+
 			log.Printf("API listening on %s", s.Addr)
 		},
 	}
@@ -92,27 +82,4 @@ func newRouter() (chi.Router, error) {
 	}
 
 	return router, nil
-}
-
-func newDatabase() (*sqlx.DB, error) {
-
-	var err error
-	var db *sqlx.DB
-
-	// Create database
-	db, err = sqlx.Connect("pgx", fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable",
-		config.Database.Username, config.Database.Password, config.Database.Host, config.Database.Port, config.Database.Database))
-	// db, err = sqlx.Connect("pgx", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-	// 	config.Database.Host, config.Database.Port, config.Database.Username, config.Database.Password, config.Database.Database))
-	if err != nil {
-		return nil, fmt.Errorf("database connection error: %w", err)
-	}
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		return nil, fmt.Errorf("could not ping database %w", err)
-	}
-	db.SetMaxOpenConns(config.Database.MaxConnections)
-
-	return db, nil
 }

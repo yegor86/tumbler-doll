@@ -6,11 +6,9 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
 	cli "github.com/spf13/cobra"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
-	"github.com/yegor86/tumbler-doll/plugins/scm/shared"
 )
 
 func init() {
@@ -18,7 +16,6 @@ func init() {
 }
 
 var (
-	scmClient   *shared.ScmRPCClient
 	workflowCmd = &cli.Command{
 		Use:   "wf",
 		Short: "Start Workflow",
