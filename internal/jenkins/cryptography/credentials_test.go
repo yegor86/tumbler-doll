@@ -24,6 +24,7 @@ SOFTWARE.
 package cryptography
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,6 +36,9 @@ const (
 )
 
 var (
+	// Initialization vector for encryption
+	iv = []byte{77, 200, 227, 127, 175, 147, 73, 132, 10, 124, 165, 185, 24, 97, 87, 56}
+
 	oldFormatEncryptedCredentials = []xml.Credential{
 		{
 			Tags: map[string]string{
@@ -140,7 +144,7 @@ func Test_decrypts_new_format_credentials(t *testing.T) {
 }
 
 func Test_encrypts_new_format_credentials(t *testing.T) {
-	iv := []byte{77, 200, 227, 127, 175, 147, 73, 132, 10, 124, 165, 185, 24, 97, 87, 56}
+	
 	secret := []byte(decryptedSecret)
 
 	encrypt := func(plaintext, key []byte) ([]byte, error) {
@@ -152,4 +156,22 @@ func Test_encrypts_new_format_credentials(t *testing.T) {
 	}
 
 	assert.Equal(t, newFormatEncryptedCredentials, actualCredentials)
+}
+
+func Test_decrypt_credentials_from_xml_file(t *testing.T) {
+	t.Skip("skipping testing")
+
+	expectedCredentials := []xml.Credential{}
+	credentialsXml, _ := os.ReadFile("../test/resources/credentials.xml")
+
+	credentials, _ := xml.ParseCredentialsXml(credentialsXml)
+
+	encrypt := func(plaintext, key []byte) ([]byte, error) {
+		return _encryptAes128Cbc(plaintext, key, iv)
+	}
+	encryptedCredentials, _ := EncryptCredentials(credentials, []byte(decryptedSecret), encrypt)
+
+	os.WriteFile("../test/resources/encrypted_credentials.xml", []byte(encryptedCredentials[2].Tags["privateKey"]), 0770)
+
+	assert.Equal(t, expectedCredentials, encryptedCredentials)
 }

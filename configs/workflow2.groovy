@@ -8,7 +8,7 @@ pipeline {
                 sh 'mvn --version'
                 git branch: 'main',
                     credentialsId: '12345-1234-4696-af25-123455',
-                    url: 'https://github.com/yegor86/tumbler-doll.git'
+                    url: 'git@github.com:yegor86/rt-object-detection.git'
             }
         }
         stage('Example Test') {

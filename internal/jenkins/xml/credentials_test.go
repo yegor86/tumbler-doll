@@ -28,9 +28,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	// "github.com/yegor86/tumbler-doll/internal/jenkins/cryptography"
 )
 
 var (
+
+	decryptedSecret = "V7sRJ]hBJE/7HWk4"
+
 	gitlab = &Credential{
 		Tags: map[string]string{
 			"scope":       "GLOBAL",

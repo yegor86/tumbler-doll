@@ -66,6 +66,8 @@ func (g *ScmPluginImpl) Checkout(args map[string]interface{}) (string, error) {
 		credentialsId := args["credentialsId"].(string)
 		crypto := cryptography.GetInstance()
 		credentials = crypto.GetCredentialsById(credentialsId)
+		g.logger.Info("PluginImpl credentialsId:", credentialsId)
+		g.logger.Info("PluginImpl credentials list size:", len(crypto.Credentials))
 	}
 
 	var authMethod transport.AuthMethod = nil
@@ -107,6 +109,9 @@ var handshakeConfig = plugin.HandshakeConfig{
 }
 
 func main() {
+	crypto := cryptography.GetInstance()
+	crypto.LoadOrSeedCrypto()
+
 	logger := hclog.New(&hclog.LoggerOptions{
 		Level:      hclog.Debug,
 		Output:     os.Stderr,
