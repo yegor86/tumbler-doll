@@ -8,10 +8,12 @@
 
 <script>
   export default {
-    data() {
-      return {
-        pipeline: Object
-      }
+    name: 'PipelineCard',
+    props: {
+      pipeline: {
+        type: Object,
+        required: true,
+      },
     },
     methods: {
       navigateToPipeline() {

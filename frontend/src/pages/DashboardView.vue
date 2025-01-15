@@ -2,8 +2,7 @@
 <div>
     <h1>Jenkins-like Dashboard</h1>
     <div class="pipeline-list">
-    <PipelineCard
-        v-for="pipeline in pipelines"
+    <pipeline-card v-for="pipeline in pipelines"
         :key="pipeline.id"
         :pipeline="pipeline"
     />

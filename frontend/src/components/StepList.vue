@@ -12,9 +12,9 @@
 
 <script>
 export default {
-props: {
-steps: Array
-}
+  props: {
+    steps: Array
+  }
 };
 </script>
   

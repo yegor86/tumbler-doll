@@ -12,14 +12,14 @@ export default {
 components: { StageList },
 data() {
     return {
-    pipeline: {
+      pipeline: {
         name: "Pipeline 1",
         stages: [
-        { name: "Build", status: "success" },
-        { name: "Test", status: "running" },
-        { name: "Deploy", status: "pending" }
+            { name: "Build", status: "success" },
+            { name: "Test", status: "running" },
+            { name: "Deploy", status: "pending" }
         ]
-    }
+      }
     };
 }
 };
