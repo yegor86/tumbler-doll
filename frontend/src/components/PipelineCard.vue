@@ -1,15 +1,17 @@
 <template>
-    <div class="pipeline-card" @click="navigateToPipeline">
-      <h3>{{ pipeline.name }}</h3>
-      <p>Status: <span :class="pipeline.status">{{ pipeline.status }}</span></p>
-      <p>Last Run: {{ pipeline.lastRun }}</p>
-    </div>
-  </template>
-  
-  <script>
+  <div class="pipeline-card" @click="navigateToPipeline">
+    <h3>{{ pipeline.name }}</h3>
+    <p>Status: <span :class="pipeline.status">{{ pipeline.status }}</span></p>
+    <p>Last Run: {{ pipeline.lastRun }}</p>
+  </div>
+</template>
+
+<script>
   export default {
-    props: {
-      pipeline: Object
+    data() {
+      return {
+        pipeline: Object
+      }
     },
     methods: {
       navigateToPipeline() {
@@ -17,9 +19,9 @@
       }
     }
   };
-  </script>
-  
-  <style>
+</script>
+
+<style>
   .pipeline-card {
     border: 1px solid #ccc;
     padding: 16px;
@@ -37,5 +39,4 @@
   .pipeline-card .failed {
     color: red;
   }
-  </style>
-  
+</style>
