@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	cli "github.com/spf13/cobra"
 
-	wf_client "go.temporal.io/sdk/client"
+	wfClient "go.temporal.io/sdk/client"
 
 	"github.com/yegor86/tumbler-doll/internal/api/v1/handler"
 )
@@ -28,7 +28,7 @@ var (
 		Run: func(cmd *cli.Command, args []string) {
 			var err error
 
-			client, err := wf_client.Dial(wf_client.Options{})
+			client, err := wfClient.Dial(wfClient.Options{})
 			if err != nil {
 				log.Fatalln("Unable to create Workflow client", err)
 			}
