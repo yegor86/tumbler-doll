@@ -1,18 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-
 	"github.com/yegor86/tumbler-doll/cmd"
+	"github.com/yegor86/tumbler-doll/internal/cryptography"
+	"github.com/yegor86/tumbler-doll/internal/env"
+	"github.com/yegor86/tumbler-doll/internal/jenkins/jobs"
 	"github.com/yegor86/tumbler-doll/plugins"
 	"github.com/yegor86/tumbler-doll/plugins/scm"
 	"github.com/yegor86/tumbler-doll/plugins/shell"
-	"github.com/yegor86/tumbler-doll/internal/env"
-	"github.com/yegor86/tumbler-doll/internal/cryptography"
 )
 
 func main() {
@@ -34,6 +35,13 @@ func main() {
 			slog.Warn("Failed to register plugin %s: %v", name, err)
 		}
 	}
+
+	jobDb := jobs.GetInstance()
+	jobs, err := jobDb.LoadJobs()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Jobs: %v", jobs)
 
 	exitOnSyscall(pluginManager)
 
