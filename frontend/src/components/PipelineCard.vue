@@ -1,7 +1,7 @@
 <template>
   <div class="pipeline-card" @click="navigateToPipeline">
-    <h3>{{ pipeline.name }}</h3>
-    <p>Status: <span :class="pipeline.status">{{ pipeline.status }}</span></p>
+    <h3>{{ pipeline.Name }}</h3>
+    <p>Status: <span :class="pipeline.status">{{ pipeline.Status }}</span></p>
     <p>Last Run: {{ pipeline.lastRun }}</p>
   </div>
 </template>
