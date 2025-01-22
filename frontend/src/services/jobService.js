@@ -8,7 +8,10 @@ const apiClient = axios.create({
 });
 
 export default {
-  getJobs() {
-    return apiClient.get("/jobs");
+  getJobs(jobPath) {
+    if (!jobPath || jobPath == "/") {
+      return apiClient.get("/jobs");  
+    }
+    return apiClient.get(jobPath);
   },
 };

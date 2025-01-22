@@ -65,8 +65,15 @@ func (jdb *JobDatabase) LoadJobs() ([]*Job, error) {
 	return jobs, nil
 }
 
-func (jdb *JobDatabase) ListJobs() []*Job {
-	jobs := deepCopy(jdb.jobs)
+func (jdb *JobDatabase) ListJobs(jobPath string) []*Job {
+	jobs := []*Job{}
+	for _, job := range jdb.jobs {
+		if  strings.HasPrefix(job.Name, jobPath) {
+			jobs = append(jobs, job)
+		}
+	}
+
+	jobs = deepCopy(jobs)
 	for _, job := range jobs {
 		job.Script = ""
 	}

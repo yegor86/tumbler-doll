@@ -3,7 +3,7 @@
     <Navbar />
     <div class="main-content">
     <Sidebar />
-    <JobList />
+    <JobList :key="componentKey"/>
     </div>
 </div>
 </template>
@@ -19,6 +19,23 @@ export default {
         Navbar,
         Sidebar,
         JobList,
+    },
+    data() {
+      return {
+        componentKey: 0,
+      };
+    },
+    watch: {
+      $route(to, from) {
+        console.log('Route changed from ', from.fullPath, ' to ', to.fullPath);
+        this.refresh()
+      }
+    },
+    methods: {
+        // Update the key to refresh
+        refresh() {
+          this.componentKey += 1;
+        },
     },
 };
 </script>

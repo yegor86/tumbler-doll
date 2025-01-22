@@ -22,12 +22,14 @@ import apiService from "../services/jobService";
 
 export default {
     name: "JobList",
-    components: { JobItem },
+    components: { 
+      JobItem
+    },
     data() {
-        return {
-            jobs: [],
-            error: null,
-        }
+      return {
+        jobs: [],
+        error: null,
+      }
     },
     mounted() {
         this.fetchData();
@@ -35,7 +37,7 @@ export default {
     methods: {
         async fetchData() {
             try {
-                const response = await apiService.getJobs();
+                const response = await apiService.getJobs(this.$route.fullPath);
                 this.jobs = response.data;
             } catch (error) {
                 this.error = "Error fetching jobs";
@@ -46,10 +48,14 @@ export default {
 };
 </script>
   
-  <style scoped>
+<style scoped>
   .job-list {
     flex-grow: 1;
     padding: 20px;
+  }
+  ul {
+    list-style: none;
+    padding-left: 20px;
   }
   table {
     width: 100%;
