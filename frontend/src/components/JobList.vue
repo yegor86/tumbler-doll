@@ -4,6 +4,7 @@
     <table>
     <thead>
         <tr>
+        <th>Type</th>
         <th>Name</th>
         <th>Status</th>
         <th>Last Build</th>

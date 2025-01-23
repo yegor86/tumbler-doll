@@ -1,5 +1,9 @@
 <template>
 <tr @click="navigateToJob" class="job-card">
+    <td class="folder-name">
+      <span v-if="isFolder">📂</span>
+      <span v-else>📄</span>
+    </td>
     <td>{{ job.Name }}</td>
     <td>{{ job.Status }}</td>
     <td>{{ job.LastBuild }}</td>
@@ -15,11 +19,21 @@
         required: true,
       },
     },
+    computed: {
+      isFolder() {
+        return this.job.IsDir;
+      },
+    },
     methods: {
       navigateToJob() {
-        this.$router.push(`${this.job.Name}`);
+        // '/' -> /jobs/
+        // '/Public' -> /jobs/Public
+        // '/Public/' -> /jobs/Public/jobs/
+        // '/Public/mltibranch' -> /jobs/Public/jobs/mltibranch
+        const jobPath = this.job.Name.replace(/\//g, /jobs/);
+        this.$router.push(jobPath);
       }
-    }
+    },
   };
 </script>
 

@@ -76,6 +76,9 @@ func (jdb *JobDatabase) ListJobs(jobPath string) []*Job {
 	jobs = deepCopy(jobs)
 	for _, job := range jobs {
 		job.Script = ""
+		item := strings.TrimPrefix(job.Name, jobPath)
+		item = strings.TrimPrefix(item, "/")
+		job.IsDir = strings.Contains(item, "/")
 	}
 	return jobs
 }
