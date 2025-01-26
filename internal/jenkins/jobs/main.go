@@ -16,10 +16,11 @@ type Job struct {
 	Status      string
 	Script      string
 	IsDir       bool
+	Children    []*Job
 }
 
 type JobDatabase struct {
-	jobs []*Job
+	Root *Job
 }
 
 type JobDefinition struct {
@@ -48,39 +49,64 @@ var (
 func GetInstance() *JobDatabase {
 	once.Do(func() {
 		instance = &JobDatabase{
-			jobs: []*Job{},
+			Root: &Job{ Name: "/" },
 		}
 	})
 	return instance
 }
 
-func (jdb *JobDatabase) LoadJobs() ([]*Job, error) {
+func (jdb *JobDatabase) ListJobs(jobPath string) []*Job {
+	
+	jobs := jdb._listJobs(jobPath, jdb.Root)
+
+	jobs = deepCopy(jobs)
+	for _, job := range jobs {
+		job.Name = strings.ReplaceAll(job.Name, "/jobs", "")
+		job.Script = ""
+		job.Children = nil
+	}
+	return jobs
+}
+
+func (jdb *JobDatabase) _listJobs(prefix string, root *Job) []*Job {
+	node := jdb._findSubtree(prefix, root)
+	if node != nil && node.IsDir {
+		return node.Children
+	} else if node != nil && !node.IsDir {
+		return []*Job{node}
+	}
+	return []*Job{}
+}
+
+func (jdb *JobDatabase) _findSubtree(prefix string, root *Job) *Job {
+	if root.Name == prefix || strings.Contains(root.Name, prefix) {
+		return root
+	}
+	
+	for _, child := range root.Children {
+		node := jdb._findSubtree(prefix, child)
+		if node != nil {
+			return node
+		}
+	}
+
+	return nil
+}
+
+func (jdb *JobDatabase) LoadJobs() (*Job, error) {
 	jenkinsHome := os.Getenv("JENKINS_HOME")
 	jobDir := filepath.Join(jenkinsHome, "jobs")
 	jobs, err := jdb._loadJobs(jobDir)
 	if err != nil {
 		return nil, err
 	}
-	jdb.jobs = jobs
-	return jobs, nil
-}
-
-func (jdb *JobDatabase) ListJobs(jobPath string) []*Job {
-	jobs := []*Job{}
-	for _, job := range jdb.jobs {
-		if  strings.HasPrefix(job.Name, jobPath) {
-			jobs = append(jobs, job)
-		}
+	jdb.Root = &Job{
+		Name: "/jobs/",
+		IsDir: true,
+		Children: jobs,
 	}
-
-	jobs = deepCopy(jobs)
-	for _, job := range jobs {
-		job.Script = ""
-		item := strings.TrimPrefix(job.Name, jobPath)
-		item = strings.TrimPrefix(item, "/")
-		job.IsDir = strings.Contains(item, "/")
-	}
-	return jobs
+	
+	return jdb.Root, nil
 }
 
 func (jdb *JobDatabase) _loadJobs(jobsDir string) ([]*Job, error) {
@@ -118,17 +144,12 @@ func (jdb *JobDatabase) _loadJobs(jobsDir string) ([]*Job, error) {
 			fmt.Printf("Error parsing config.xml for job %s: %v\n", folder.Name(), err)
 		}
 
-		if !job.IsDir {
-			// Remove $JENKINS_HOME prefix
-			job.Name = strings.TrimPrefix(job.Name, os.Getenv("JENKINS_HOME"))
-			jobs = append(jobs, job)
-			continue
-		}
-		children, err := jdb._loadJobs(job.Name)
+		job.Children, err = jdb._loadJobs(job.Name)
+		job.Name = strings.TrimPrefix(job.Name, os.Getenv("JENKINS_HOME"))
 		if err != nil {
 			continue
 		}
-		jobs = append(jobs, children...)
+		jobs = append(jobs, job)
 	}
 	return jobs, nil
 }

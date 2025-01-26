@@ -4,7 +4,7 @@
       <span v-if="isFolder">📂</span>
       <span v-else>📄</span>
     </td>
-    <td>{{ job.Name }}</td>
+    <td>{{ truncateJobName(job.Name) }}</td>
     <td>{{ job.Status }}</td>
     <td>{{ job.LastBuild }}</td>
 </tr>
@@ -32,7 +32,14 @@
         // '/Public/mltibranch' -> /jobs/Public/jobs/mltibranch
         const jobPath = this.job.Name.replace(/\//g, /jobs/);
         this.$router.push(jobPath);
-      }
+      },
+
+      // '/jobs/Public' -> Public
+      // '/Public/mltibranch' -> mltibranch
+      // '/Public/mltibranch/' -> mltibranch
+      truncateJobName(jobName) {
+        return jobName;
+      },
     },
   };
 </script>

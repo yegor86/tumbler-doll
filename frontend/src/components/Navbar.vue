@@ -1,6 +1,6 @@
 <template>
     <nav class="navbar">
-      <div class="logo">Jenkins</div>
+      <div class="logo">Tumbler</div>
       <div class="actions">
         <button class="btn">New Item</button>
         <button class="btn">People</button>
