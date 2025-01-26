@@ -34,9 +34,6 @@
         this.$router.push(jobPath);
       },
 
-      // '/jobs/Public' -> Public
-      // '/Public/mltibranch' -> mltibranch
-      // '/Public/mltibranch/' -> mltibranch
       truncateJobName(jobName) {
         return jobName;
       },

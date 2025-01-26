@@ -3,7 +3,13 @@
     <Navbar />
     <div class="main-content">
     <Sidebar />
-    <JobList :key="componentKey"/>
+    <transition name="fade" mode="out-in">
+      <component @sendJobType="handleJobType"
+        :is="currentComponent"
+        :key="componentKey"
+      />
+    </transition>
+    <!-- <JobList :key="componentKey"/> -->
     </div>
 </div>
 </template>
@@ -12,6 +18,7 @@
 import Navbar from "../components/Navbar.vue";
 import Sidebar from "../components/Sidebar.vue";
 import JobList from "../components/JobList.vue";
+import JobDetails from "../components/JobDetails.vue";
 
 export default {
     name: "DashboardView",
@@ -19,9 +26,11 @@ export default {
         Navbar,
         Sidebar,
         JobList,
+        JobDetails,
     },
     data() {
       return {
+        selectedJob: {IsDir: true},
         componentKey: 0,
       };
     },
@@ -31,11 +40,20 @@ export default {
         this.refresh()
       }
     },
+    computed: {
+      currentComponent() {
+        // Dynamically decide which component to show
+        return this.selectedJob.IsDir ? 'JobList' : 'JobDetails';
+      },
+    },
     methods: {
-        // Update the key to refresh
-        refresh() {
-          this.componentKey += 1;
-        },
+      handleJobType(jobType) {
+        this.selectedJob.IsDir = jobType;
+      },
+      // Update the key to refresh
+      refresh() {
+        this.componentKey += 1;
+      },
     },
 };
 </script>

@@ -28,6 +28,8 @@ export default {
 
 <style scoped>
 .job-details {
-  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 </style>

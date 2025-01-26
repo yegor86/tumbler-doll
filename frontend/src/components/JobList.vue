@@ -39,7 +39,12 @@ export default {
         async fetchData() {
             try {
                 const response = await apiService.getJobs(this.$route.fullPath);
-                this.jobs = response.data;
+                const jobs = response.data;
+                
+                const isJob = jobs.length == 1 && !jobs[0].IsDir;
+                this.$emit('sendJobType', !isJob);
+
+                this.jobs = jobs;
             } catch (error) {
                 this.error = "Error fetching jobs";
                 console.error(error);

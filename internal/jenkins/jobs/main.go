@@ -49,7 +49,7 @@ var (
 func GetInstance() *JobDatabase {
 	once.Do(func() {
 		instance = &JobDatabase{
-			Root: &Job{ Name: "/" },
+			Root: &Job{},
 		}
 	})
 	return instance
