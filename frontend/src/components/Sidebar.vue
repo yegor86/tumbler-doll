@@ -1,10 +1,23 @@
 <template>
     <aside class="sidebar">
       <ul>
-        <li><a href="#">Dashboard</a></li>
-        <li><a href="#">Manage Jenkins</a></li>
-        <li><a href="#">My Views</a></li>
-        <li><a href="#">New View</a></li>
+        <!-- Folder-specific menu items -->
+        <template v-if="isFolder">
+          <li><a href="#" @click.prevent="navigateTo('/')">Dashboard</a></li>
+          <li><a href="#" @click.prevent="navigateTo('new-job')">New Job</a></li>
+          <li><a href="#" @click.prevent="navigateTo('manage-folder')">Manage Folder</a></li>
+          <li><a href="#">Manage Jenkins</a></li>
+          <li><a href="#">My Views</a></li>
+          <li><a href="#">New View</a></li>
+        </template>
+
+        <!-- Job-specific menu items -->
+        <template v-else>
+          <li><a href="#" @click.prevent="navigateTo('run')">Run</a></li>
+          <li><a href="#" @click.prevent="navigateTo('configure')">Configure</a></li>
+          <li><a href="#" @click.prevent="navigateTo('build-history')">Build History</a></li>
+          <li><a href="#" @click.prevent="navigateTo('delete-job')">Delete Job</a></li>
+        </template>
       </ul>
     </aside>
   </template>
@@ -12,6 +25,17 @@
   <script>
   export default {
     name: "SideBar",
+    props: {
+      isFolder: {
+        type: Boolean,
+        required: true,
+      },
+    },
+    methods: {
+      navigateTo(path) {
+        this.$router.push(path);
+      },
+    },
   };
   </script>
   

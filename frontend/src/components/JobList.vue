@@ -41,8 +41,8 @@ export default {
                 const response = await apiService.getJobs(this.$route.fullPath);
                 const jobs = response.data;
                 
-                const isJob = jobs.length == 1 && !jobs[0].IsDir;
-                this.$emit('sendJobType', !isJob);
+                const onToJob = jobs.length == 1 && !jobs[0].IsDir;
+                this.$emit('navigate', !onToJob);
 
                 this.jobs = jobs;
             } catch (error) {

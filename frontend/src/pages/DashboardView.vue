@@ -2,9 +2,9 @@
 <div class="dashboard">
     <Navbar />
     <div class="main-content">
-    <Sidebar />
+    <Sidebar :isFolder="isFolder()"/>
     <transition name="fade" mode="out-in">
-      <component @sendJobType="handleJobType"
+      <component @navigate="handleNavigation"
         :is="currentComponent"
         :key="componentKey"
       />
@@ -47,8 +47,11 @@ export default {
       },
     },
     methods: {
-      handleJobType(jobType) {
-        this.selectedJob.IsDir = jobType;
+      handleNavigation(destination) {
+        this.selectedJob.IsDir = destination;
+      },
+      isFolder() {
+        return this.selectedJob.IsDir;
       },
       // Update the key to refresh
       refresh() {
