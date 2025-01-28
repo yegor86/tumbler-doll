@@ -15,9 +15,10 @@ func ListJobs(defaultPath string) http.HandlerFunc {
 			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 			return
 		}
-		jobPath := chi.URLParam(r, "*")
-		
+
 		jobDB := jobs.GetInstance()
+		
+		jobPath := chi.URLParam(r, "*")
 		jobs := jobDB.ListJobs("/jobs/" + jobPath)
 		
 		w.Header().Set("Content-Type", "application/json")

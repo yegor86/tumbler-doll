@@ -43,6 +43,7 @@ var (
 			router.Get("/upload", handler.UploadForm)
 			router.Get("/jobs", handler.ListJobs("/"))
 			router.Get("/jobs/*", handler.ListJobs("/"))
+			router.Post("/submit/*", handler.SubmitJob(client))
 			router.Post("/uploadfile", handler.UploadFile(client))
 
 			// Create a server

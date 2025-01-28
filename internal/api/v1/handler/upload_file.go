@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	wf_client "go.temporal.io/sdk/client"
-	"github.com/yegor86/tumbler-doll/internal/workflow"
 	"github.com/yegor86/tumbler-doll/internal/dsl"
+	"github.com/yegor86/tumbler-doll/internal/workflow"
+	temporal "go.temporal.io/sdk/client"
 )
 
 // uploadForm serves the file upload form from an HTML template file
@@ -37,7 +37,7 @@ func UploadForm(w http.ResponseWriter, r *http.Request) {
 }
 
 // uploadFile handles the file upload
-func UploadFile(client wf_client.Client) http.HandlerFunc {
+func UploadFile(wfClient temporal.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -66,7 +66,7 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			return
 		}
 
-		var dslParser dsl.DslParser;
+		var dslParser dsl.DslParser
 		pipeline, err := dslParser.Parse(string(data))
 		if err != nil {
 			http.Error(w, "Error reading file", http.StatusInternalServerError)
@@ -74,11 +74,11 @@ func UploadFile(client wf_client.Client) http.HandlerFunc {
 			return
 		}
 
-		workflowOptions := wf_client.StartWorkflowOptions{
-			ID:        "dsl_" + uuid.New().String(),
-			TaskQueue: "dsl",
+		workflowOptions := temporal.StartWorkflowOptions{
+			ID:        "dsl/" + uuid.New().String(),
+			TaskQueue: "dslQueue",
 		}
-		we, err := client.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
+		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
 		if err != nil {
 			http.Error(w, "Error executing workflow", http.StatusInternalServerError)
 			log.Printf("Unable to execute workflow %v", err)

@@ -65,7 +65,6 @@ export default {
 .dashboard {
   display: flex;
   flex-direction: column;
-  height: 100vh;
 }
 .main-content {
   display: flex;

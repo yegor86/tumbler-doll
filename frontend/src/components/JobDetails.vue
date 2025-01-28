@@ -3,7 +3,9 @@
     <!-- Header -->
     <div class="header">
       <h1>{{ job.Name }}</h1>
-      <p>Status: <span :class="job.Status">{{ job.Status }}</span></p>
+    </div>
+    <div>
+        <p>Status: <span :class=job.Status>{{ job.Status }}</span></p>
     </div>
 
     <div class="content">
@@ -75,6 +77,7 @@ export default {
 /* Header Styles */
 .header {
   display: flex;
+  width: 100%;
   justify-content: space-between;
   align-items: center;
   background-color: #f3f4f6;
@@ -93,6 +96,10 @@ export default {
 }
 .header span.running {
   color: orange;
+}
+
+.header span.pending {
+  color: blueviolet;
 }
 
 /* Layout Styles */

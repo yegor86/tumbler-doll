@@ -13,7 +13,7 @@
 
         <!-- Job-specific menu items -->
         <template v-else>
-          <li><a href="#" @click.prevent="navigateTo('run')">Run</a></li>
+          <li><a href="#" @click.prevent="submitJob()">Run</a></li>
           <li><a href="#" @click.prevent="navigateTo('configure')">Configure</a></li>
           <li><a href="#" @click.prevent="navigateTo('build-history')">Build History</a></li>
           <li><a href="#" @click.prevent="navigateTo('delete-job')">Delete Job</a></li>
@@ -23,6 +23,8 @@
   </template>
   
   <script>
+  import apiService from "../services/jobService";
+
   export default {
     name: "SideBar",
     props: {
@@ -34,6 +36,9 @@
     methods: {
       navigateTo(path) {
         this.$router.push(path);
+      },
+      async submitJob() {
+        
       },
     },
   };

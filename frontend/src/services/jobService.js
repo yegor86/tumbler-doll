@@ -14,4 +14,8 @@ export default {
     }
     return apiClient.get(jobPath);
   },
+
+  submitJob(jobPath) {
+    return apiClient.post(`/submit/${jobPath}`);
+  },
 };

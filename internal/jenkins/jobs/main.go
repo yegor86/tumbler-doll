@@ -68,6 +68,31 @@ func (jdb *JobDatabase) ListJobs(jobPath string) []*Job {
 	return jobs
 }
 
+func (jdb *JobDatabase) LoadJobs() (*Job, error) {
+	jenkinsHome := os.Getenv("JENKINS_HOME")
+	jobDir := filepath.Join(jenkinsHome, "jobs")
+	jobs, err := jdb._loadJobs(jobDir)
+	if err != nil {
+		return nil, err
+	}
+	jdb.Root = &Job{
+		Name: "/jobs/",
+		IsDir: true,
+		Children: jobs,
+	}
+	
+	return jdb.Root, nil
+}
+
+func (jdb *JobDatabase) FindJobs(jobPath string) *Job {
+	node := jdb._findSubtree(jobPath, jdb.Root)
+	if node.Name == jobPath {
+		return node
+	}
+	
+	return nil
+}
+
 func (jdb *JobDatabase) _listJobs(prefix string, root *Job) []*Job {
 	node := jdb._findSubtree(prefix, root)
 	if node != nil && node.IsDir {
@@ -91,22 +116,6 @@ func (jdb *JobDatabase) _findSubtree(prefix string, root *Job) *Job {
 	}
 
 	return nil
-}
-
-func (jdb *JobDatabase) LoadJobs() (*Job, error) {
-	jenkinsHome := os.Getenv("JENKINS_HOME")
-	jobDir := filepath.Join(jenkinsHome, "jobs")
-	jobs, err := jdb._loadJobs(jobDir)
-	if err != nil {
-		return nil, err
-	}
-	jdb.Root = &Job{
-		Name: "/jobs/",
-		IsDir: true,
-		Children: jobs,
-	}
-	
-	return jdb.Root, nil
 }
 
 func (jdb *JobDatabase) _loadJobs(jobsDir string) ([]*Job, error) {
