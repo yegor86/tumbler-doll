@@ -28,7 +28,7 @@ var (
 			}
 			defer c.Close()
 
-			w := worker.New(c, "dsl", worker.Options{})
+			w := worker.New(c, "JobQueue", worker.Options{})
 
 			w.RegisterWorkflow(workflow.GroovyDSLWorkflow)
 			w.RegisterActivity(&workflow.StageActivities{})

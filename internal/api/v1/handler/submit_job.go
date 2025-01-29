@@ -14,7 +14,11 @@ import (
 	temporal "go.temporal.io/sdk/client"
 )
 
-// Handler function for POST /job/{jobpath}
+var (
+	dslParser dsl.DslParser
+)
+
+// Handler function for POST /submit/{jobpath}
 func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
@@ -26,18 +30,15 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 		
 		jobPath := chi.URLParam(r, "*")
 		job := jobDB.FindJobs(jobPath)
+		if job == nil {
+			http.Error(w, fmt.Sprintf("job %s not found", jobPath), http.StatusNotFound)
+			return
+		}
 
-		var dslParser dsl.DslParser
 		pipeline, err := dslParser.Parse(job.Script)
 		if err != nil {
 			http.Error(w, "Error reading script", http.StatusInternalServerError)
 			log.Printf("Error reading script %s", jobPath)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if job == nil {
-			http.Error(w, fmt.Sprintf("job %s not found", jobPath), http.StatusNotFound)
 			return
 		}
 
@@ -46,6 +47,8 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			TaskQueue: "JobQueue",
 		}
 		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
+		
+		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
 			http.Error(w, "Error executing workflow", http.StatusInternalServerError)
 			log.Printf("Unable to execute workflow %v", err)

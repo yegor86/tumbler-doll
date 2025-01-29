@@ -39,6 +39,16 @@
       },
       async submitJob() {
         
+        try {
+            const jobPath = this.$route.fullPath; // .replace(/\/jobs\//g, '/')
+            const response = await apiService.submitJob(jobPath);
+            
+            this.$emit('statusChange', { Status: 'running', Message: response.data });
+
+        } catch (error) {
+            this.error = "Error fetching jobs";
+            console.error(error);
+        }
       },
     },
   };

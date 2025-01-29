@@ -1,5 +1,5 @@
 <template>
-  <div class="job-details">
+  <div class="job-details" @statusChange="handleStatusChange">
     <!-- Header -->
     <div class="header">
       <h1>{{ job.Name }}</h1>
@@ -55,14 +55,19 @@ export default {
             const response = await apiService.getJobs(this.$route.fullPath);
             const jobs = response.data;
             
-            const onToJob = jobs.length == 1 && !jobs[0].IsDir;
-            this.$emit('navigate', !onToJob);
+            const toFolder = !(jobs.length == 1 && !jobs[0].IsDir);
+            this.$emit('navigate', toFolder);
 
             this.job = jobs && jobs[0];
         } catch (error) {
             this.error = "Error fetching jobs";
             console.error(error);
         }
+    },
+
+    handleStatusChange(event) {
+      this.job.Status = event.Status;
+      this.job.Message = event.Message;
     },
   },
 };
