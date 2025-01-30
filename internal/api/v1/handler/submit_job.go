@@ -8,14 +8,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/yegor86/tumbler-doll/internal/dsl"
 	"github.com/yegor86/tumbler-doll/internal/jenkins/jobs"
 	"github.com/yegor86/tumbler-doll/internal/workflow"
 	temporal "go.temporal.io/sdk/client"
 )
 
 var (
-	dslParser dsl.DslParser
+	dslParser workflow.DslParser
 )
 
 // Handler function for POST /submit/{jobpath}

@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/yegor86/tumbler-doll/internal/dsl"
 	"github.com/yegor86/tumbler-doll/internal/workflow"
 	temporal "go.temporal.io/sdk/client"
 )
@@ -66,7 +65,7 @@ func UploadFile(wfClient temporal.Client) http.HandlerFunc {
 			return
 		}
 
-		var dslParser dsl.DslParser
+		var dslParser workflow.DslParser
 		pipeline, err := dslParser.Parse(string(data))
 		if err != nil {
 			http.Error(w, "Error reading file", http.StatusInternalServerError)

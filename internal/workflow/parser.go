@@ -1,11 +1,10 @@
-package dsl
+package workflow
 
 import (
 	"log"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
-	"github.com/yegor86/tumbler-doll/internal/workflow"
 )
 
 type (
@@ -25,8 +24,8 @@ var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Comma", Pattern: `,`},
 })
 
-func (*DslParser) Parse(dslFile string) (*workflow.Pipeline, error) {
-	parser := participle.MustBuild[workflow.Pipeline](
+func (*DslParser) Parse(dslFile string) (*Pipeline, error) {
+	parser := participle.MustBuild[Pipeline](
 		participle.Lexer(lexerRules),
 	)
 

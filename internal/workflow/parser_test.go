@@ -1,11 +1,10 @@
-package dsl
+package workflow
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 
-	"github.com/yegor86/tumbler-doll/internal/workflow"
 )
 
 func TestParseSingleStep(t *testing.T) {
@@ -23,16 +22,16 @@ func TestParseSingleStep(t *testing.T) {
     }
     `
 
-	want := &workflow.Pipeline{
-		Agent: &workflow.Agent{
+	want := &Pipeline{
+		Agent: &Agent{
 			Docker: nil,
 		},
-		Stages: []*workflow.Stage{
+		Stages: []*Stage{
 			{
 				Name: "Test",
-				Steps: []*workflow.Step{
+				Steps: []*Step{
 					{
-						SingleKV: &workflow.SingleKVCommand{
+						SingleKV: &SingleKVCommand{
 							Command: "sh",
 							Value:   "node --version",
 						},
@@ -73,35 +72,35 @@ func TestParseMultipleSteps(t *testing.T) {
 	}
     `
 
-	want := &workflow.Pipeline{
-		Agent: &workflow.Agent{
+	want := &Pipeline{
+		Agent: &Agent{
 			Docker: nil,
 		},
-		Stages: []*workflow.Stage{
+		Stages: []*Stage{
 			{
 				Name: "Example Build",
-				Agent: &workflow.Agent{
-					Docker: &workflow.Docker{
+				Agent: &Agent{
+					Docker: &Docker{
 						Image: "maven:3.9.3-eclipse-temurin-17",
 					},
 				},
-				Steps: []*workflow.Step{
+				Steps: []*Step{
 					{
-						SingleKV: &workflow.SingleKVCommand{
+						SingleKV: &SingleKVCommand{
 							Command: "echo",
 							Value:   "Hello, Maven",
 						},
 					},
 					{
-						SingleKV: &workflow.SingleKVCommand{
+						SingleKV: &SingleKVCommand{
 							Command: "sh",
 							Value:   "mvn --version",
 						},
 					},
 					{
-						MultiKV: &workflow.MultiKVCommand{
+						MultiKV: &MultiKVCommand{
 							Command: "git",
-							Params: []workflow.Param{
+							Params: []Param{
 								{Key: "branch", Value: "main"},
 								{Key: "credentialsId", Value: "12345-1234-4696-af25-123455"},
 								{Key: "url", Value: "https://github.com/yegor86/tumbler-doll.git"},
@@ -155,21 +154,21 @@ func TestParseParallelStage(t *testing.T) {
 	}
     `
 
-	want := &workflow.Pipeline{
-		Agent: &workflow.Agent{
+	want := &Pipeline{
+		Agent: &Agent{
 			Docker: nil,
 		},
-		Stages: []*workflow.Stage{
+		Stages: []*Stage{
 			{
 				Name: "Example Build",
-				Agent: &workflow.Agent{
-					Docker: &workflow.Docker{
+				Agent: &Agent{
+					Docker: &Docker{
 						Image: "maven:3.9.3-eclipse-temurin-17",
 					},
 				},
-				Steps: []*workflow.Step{
+				Steps: []*Step{
 					{
-						SingleKV: &workflow.SingleKVCommand{
+						SingleKV: &SingleKVCommand{
 							Command: "sh",
 							Value:   "mvn --version",
 						},
@@ -179,12 +178,12 @@ func TestParseParallelStage(t *testing.T) {
 			{
 				Name: "Parallel Stage",
 				FailFast: func(b bool) *bool { return &b }(true),
-				Parallel: workflow.Parallel {
+				Parallel: Parallel {
 					{
 						Name: "Branch A",
-						Steps: []*workflow.Step{
+						Steps: []*Step{
 							{
-								SingleKV: &workflow.SingleKVCommand{
+								SingleKV: &SingleKVCommand{
 									Command: "echo",
 									Value:   "On Branch A",
 								},
@@ -193,9 +192,9 @@ func TestParseParallelStage(t *testing.T) {
 					},
 					{
 						Name: "Branch B",
-						Steps: []*workflow.Step{
+						Steps: []*Step{
 							{
-								SingleKV: &workflow.SingleKVCommand{
+								SingleKV: &SingleKVCommand{
 									Command: "echo",
 									Value:   "On Branch B",
 								},
