@@ -18,4 +18,9 @@ export default {
   submitJob(jobPath) {
     return apiClient.post(`/submit/${jobPath}`);
   },
+
+  streamJobExec(jobPath) {
+    const eventSource = new EventSource(`/stream/${jobPath}`);
+    return eventSource;
+  },
 };

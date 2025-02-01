@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
+	"unicode"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
@@ -16,39 +21,80 @@ type ShellPluginImpl struct {
 	logger hclog.Logger
 }
 
-func (g *ShellPluginImpl) Echo(args map[string]interface{}) string {
+func (g *ShellPluginImpl) Echo(args map[string]interface{}, reply *shared.StreamLogsReply) error {
 
 	g.logger.Info("[Shell] echo %s...", args["text"])
 	text := args["text"].(string)
 
 	cmd := exec.Command("echo", text)
-	result, err := cmd.Output()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		g.logger.Error("[Shell] Plugin error %v", err)
-		return err.Error()
+		return err
 	}
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	defer cmd.Wait()
 
-	return string(result)
+	reader := bufio.NewReader(stdout)
+	return readAll(reader, reply)
 }
 
-func (g *ShellPluginImpl) Sh(params map[string]interface{}) string {
+func (g *ShellPluginImpl) Sh(params map[string]interface{}, reply *shared.StreamLogsReply) error {
 
-	next := func (params map[string]interface{}) string {
+	next := func (params map[string]interface{}) (*bufio.Reader, error) {
 		g.logger.Info("[Shell] sh '%s'...", params["text"])
 		text := params["text"].(string)
 		terms := strings.Fields(text)
 
 		cmd := exec.Command(terms[0], terms[1:]...)
-		result, err := cmd.CombinedOutput()
+		stdout, err := cmd.StdoutPipe()
 		if err != nil {
 			g.logger.Error("[Shell] Plugin error %v", err)
-			return err.Error()
+			return nil, err
 		}
+		if err = cmd.Start(); err != nil {
+			return nil, err
+		}
+		defer cmd.Wait()
 
-		return string(result)
+		reader := bufio.NewReader(stdout)
+		return reader, nil
 	}
 	containerized := workflow.Containerize(next)
-	return containerized(params);
+	reader, err := containerized(params);
+	if err != nil {
+		return err
+	}
+	return readAll(reader, reply)
+}
+
+func readAll(reader *bufio.Reader, reply *shared.StreamLogsReply) error {
+	for {
+		line, _, err := reader.ReadLine()
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			return err
+		}
+
+		// Send back a chunk of logs
+		reply.Chunk = string(line)
+		time.Sleep(100 * time.Millisecond) // Simulate streaming delay
+	}
+	return nil
+}
+
+// RemoveControlChars removes non-printable ASCII characters from byte array and return human readble string.
+func removeControlChars(input []byte) []byte {
+	return bytes.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return -1
+		}
+		return r
+	}, input)
 }
 
 var handshakeConfig = plugin.HandshakeConfig{

@@ -42,7 +42,7 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 		}
 
 		workflowOptions := temporal.StartWorkflowOptions{
-			ID:        "job/" + uuid.New().String(),
+			ID:        job.Name + "/" + uuid.New().String(),
 			TaskQueue: "JobQueue",
 		}
 		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)

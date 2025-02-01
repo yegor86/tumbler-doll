@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -73,9 +74,19 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
-	return scmClient.shell.Echo(args)
+	reply := &shared.StreamLogsReply{}
+	err := scmClient.shell.Echo(args, reply)
+	if err == io.EOF {
+		return reply.Chunk
+	}
+	return err.Error()
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
-	return scmClient.shell.Sh(args)
+	reply := &shared.StreamLogsReply{}
+	err := scmClient.shell.Sh(args, reply)
+	if err == io.EOF {
+		return reply.Chunk
+	}
+	return err.Error()
 }

@@ -1,12 +1,11 @@
 package workflow
 
 import (
-	"bytes"
+	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"strings"
-	"unicode"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
@@ -43,9 +42,9 @@ func NewDockerContainer(ctx context.Context, imageName string) (*DockerContainer
 
 	// Create the container
 	resp, err := docker.ContainerCreate(ctx, &container.Config{
-		Image: imageName,
+		Image:      imageName,
 		Entrypoint: []string{"sh"},
-		Tty:   true,
+		Tty:        true,
 	}, &container.HostConfig{}, &network.NetworkingConfig{}, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker container: %w", err)
@@ -78,24 +77,24 @@ func (dm *DockerContainer) StopContainer(ctx context.Context, imageName string) 
 	return nil
 }
 
-func Containerize(next func(params map[string]interface{}) string) func(params map[string]interface{}) string {
-	return func(params map[string]interface{}) string {
+func Containerize(next func(params map[string]interface{}) (*bufio.Reader, error)) func(params map[string]interface{}) (*bufio.Reader, error) {
+	return func(params map[string]interface{}) (*bufio.Reader, error) {
 		if containerId, ok := params["containerId"]; ok {
 			text := params["text"].(string)
 			terms := strings.Fields(text)
-			output, err := ExecContainer(context.Background(), containerId.(string), terms)
-			
+			reader, err := ExecContainer(context.Background(), containerId.(string), terms)
+			reader.ReadLine()
+
 			if err != nil {
-				return fmt.Errorf("error attaching to container %s: %v", containerId, err).Error()
+				return nil, fmt.Errorf("error attaching to container %s: %v", containerId, err)
 			}
-			return string(output)
-		} else {
-    		return next(params)
-		}
-    }
+			return reader, nil
+		}			
+		return next(params)
+	}
 }
 
-func ExecContainer(ctx context.Context, containerId string, cmd []string) ([]byte, error) {
+func ExecContainer(ctx context.Context, containerId string, cmd []string) (*bufio.Reader, error) {
 	// Create a Docker client
 	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion(dockerClientVersion))
 	if err != nil {
@@ -118,14 +117,17 @@ func ExecContainer(ctx context.Context, containerId string, cmd []string) ([]byt
 		return nil, fmt.Errorf("failed to start exec instance for command '%v': %w", cmd, err)
 	}
 	defer execAttachResp.Close()
-	execAttachResp.CloseWrite()
+
+	// reader := bufio.NewReader(execAttachResp.Reader)
+	// execAttachResp.CloseWrite()
+	return execAttachResp.Reader, nil
 
 	// Capture the output
-	output, err := io.ReadAll(execAttachResp.Reader)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read output for command '%v': %w", cmd, err)
-	}
-	return removeControlChars(output), nil
+	// output, err := io.ReadAll(execAttachResp.Reader)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to read output for command '%v': %w", cmd, err)
+	// }
+	// return removeControlChars(output), nil
 }
 
 // Append tag 'latest' to image without tag
@@ -135,14 +137,4 @@ func buildImageWithTag(imageName string) string {
 		return imageTag[0] + ":" + imageTag[1]
 	}
 	return imageTag[0] + ":latest"
-}
-
-// RemoveControlChars removes non-printable ASCII characters from byte array and return human readble string.
-func removeControlChars(input []byte) []byte {
-    return bytes.Map(func(r rune) rune {
-        if unicode.IsControl(r) {
-            return -1
-        }
-        return r
-    }, input)
 }
