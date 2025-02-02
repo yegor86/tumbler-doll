@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -12,8 +12,10 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
+	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
 	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
 )
 
@@ -21,7 +23,7 @@ type ShellPluginImpl struct {
 	logger hclog.Logger
 }
 
-func (g *ShellPluginImpl) Echo(args map[string]interface{}, reply *shared.StreamLogsReply) error {
+func (g *ShellPluginImpl) Echo(ctx context.Context, req *pb.LogRequest) (grpc.ServerStreamingClient[pb.LogResponse], error) {
 
 	g.logger.Info("[Shell] echo %s...", args["text"])
 	text := args["text"].(string)
@@ -41,7 +43,7 @@ func (g *ShellPluginImpl) Echo(args map[string]interface{}, reply *shared.Stream
 	return readAll(reader, reply)
 }
 
-func (g *ShellPluginImpl) Sh(params map[string]interface{}, reply *shared.StreamLogsReply) error {
+func (g *ShellPluginImpl) Sh(params map[string]interface{}) error {
 
 	next := func (params map[string]interface{}) (*bufio.Reader, error) {
 		g.logger.Info("[Shell] sh '%s'...", params["text"])
@@ -104,18 +106,18 @@ var handshakeConfig = plugin.HandshakeConfig{
 }
 
 func main() {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Level:      hclog.Debug,
-		Output:     os.Stdout,
-		JSONFormat: true,
-	})
+	// logger := hclog.New(&hclog.LoggerOptions{
+	// 	Level:      hclog.Debug,
+	// 	Output:     os.Stdout,
+	// 	JSONFormat: true,
+	// })
 
-	shellImpl := &ShellPluginImpl{
-		logger: logger,
-	}
+	// shellImpl := &ShellPluginImpl{
+	// 	logger: logger,
+	// }
 
 	var pluginMap = map[string]plugin.Plugin{
-		"shell": &shared.ShellPlugin{Impl: shellImpl},
+		"shell": &shared.ShellPlugin{Impl: nil},
 	}
 
 	plugin.Serve(&plugin.ServeConfig{

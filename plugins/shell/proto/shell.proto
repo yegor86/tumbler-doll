@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package logstream;
+
+option go_package = "./proto";
+
+// LogStreamingService provides real-time streaming logs
+service LogStreamingService {
+  rpc Sh(LogRequest) returns (stream LogResponse);
+  rpc Echo(LogRequest) returns (stream LogResponse);
+}
+
+// Request message to start log streaming
+message LogRequest {
+  string command = 1;
+}
+
+// Response message containing log output chunks
+message LogResponse {
+  string chunk = 1;
+}

@@ -1,73 +1,107 @@
 package shared
 
 import (
+	"context"
 	"fmt"
-	"net/rpc"
-
+	
+	"google.golang.org/grpc"
 	"github.com/hashicorp/go-plugin"
+	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
 )
 
-// StreamLogsReply is the response struct (log line chunk)
-type StreamLogsReply struct {
-	Chunk string
+type Shell interface {
+	Echo(args map[string]interface{}) error
+	Sh(args map[string]interface{}) error
 }
 
-type Shell interface {
-	Echo(args map[string]interface{}, reply *StreamLogsReply) error
-	Sh(args map[string]interface{}, reply *StreamLogsReply) error
+type ServerShell interface {
+	Echo(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error
+	Sh(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error
 }
 
 // Here is an implementation that talks over RPC
-type ShellRPCClient struct{ client *rpc.Client }
-
-func (g *ShellRPCClient) Echo(args map[string]interface{}, reply *StreamLogsReply) error {
-	// err := g.client.Call("Plugin.Echo", args, reply)
-	var err error
-	for {
-		err = g.client.Call("Plugin.Echo", args, reply)
-		if err != nil {
-			break
-		}
-		fmt.Print(reply.Chunk) // Print log chunks in real time
-	}
-	return err
+type ShellRPCClient struct{
+	client pb.LogStreamingServiceClient
+	broker *plugin.GRPCBroker
 }
 
-func (g *ShellRPCClient) Sh(args map[string]interface{}, reply *StreamLogsReply) error {
-	// err := g.client.Call("Plugin.Sh", args, reply)
-	var err error
-	for {
-		err = g.client.Call("Plugin.Sh", args, reply)
-		if err != nil {
-			break
-		}
-		fmt.Print(reply.Chunk) // Print log chunks in real time
+func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
+	// err := g.client.Call("Plugin.Echo", args, reply)
+	
+	cmd := "echo " + args["text"].(string)
+	stream, err := g.client.Echo(context.Background(), &pb.LogRequest{
+		Command: cmd,
+	})
+	if err != nil {
+		return err
 	}
-	return err
+
+	var streamErr error
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			streamErr = err
+			break // Stream finished
+		}
+		fmt.Println(resp.Chunk)
+	}
+	
+	return streamErr
+}
+
+func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
+	// err := g.client.Call("Plugin.Sh", args, reply)
+	cmd := args["text"].(string)
+	stream, err := g.client.Echo(context.Background(), &pb.LogRequest{
+		Command: cmd,
+	})
+	if err != nil {
+		return err
+	}
+
+	var streamErr error
+	for {
+		resp, err := stream.Recv()
+		if err != nil {
+			streamErr = err
+			break // Stream finished
+		}
+		fmt.Println(resp.Chunk)
+	}
+	
+	return streamErr
 }
 
 type ShellRPCServer struct {
-	// This is the real implementation
-	Impl Shell
+	pb.UnsafeLogStreamingServiceServer
+	// Impl   ServerShell
+	broker *plugin.GRPCBroker
 }
 
-func (s *ShellRPCServer) Echo(args map[string]interface{}, reply *StreamLogsReply) error {
-	return s.Impl.Echo(args, reply)
+func (s *ShellRPCServer) Echo(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error {
+	return s.Impl.Echo(request, response)
 }
 
-func (s *ShellRPCServer) Sh(args map[string]interface{}, reply *StreamLogsReply) error {
-	return s.Impl.Sh(args, reply)
+func (s *ShellRPCServer) Sh(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error {
+	return s.Impl.Echo(request, response)
 }
 
 type ShellPlugin struct {
-	// Impl Injection
+	plugin.NetRPCUnsupportedPlugin
 	Impl Shell
 }
 
-func (p *ShellPlugin) Server(*plugin.MuxBroker) (interface{}, error) {
-	return &ShellRPCServer{Impl: p.Impl}, nil
+func (p *ShellPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
+	pb.RegisterLogStreamingServiceServer(s, &ShellRPCServer{
+		// Impl:   p.Impl,
+		broker: broker,
+	})
+	return nil
 }
 
-func (ShellPlugin) Client(b *plugin.MuxBroker, c *rpc.Client) (interface{}, error) {
-	return &ShellRPCClient{client: c}, nil
+func (p *ShellPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+	return &ShellRPCClient{
+		client: pb.NewLogStreamingServiceClient(c), 
+		broker: broker,
+	}, nil
 }

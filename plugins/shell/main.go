@@ -2,7 +2,6 @@ package shell
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type ShellPlugin struct {
-	shell    shared.Shell
+	shell  shared.Shell
 	client *plugin.Client
 }
 
@@ -38,7 +37,11 @@ func (p *ShellPlugin) Start() error {
 		HandshakeConfig: handshakeConfig,
 		Plugins:         pluginMap,
 		Cmd:             exec.Command("plugins/shell/shell"),
-		Logger:          logger,
+		AllowedProtocols: []plugin.Protocol{
+			plugin.ProtocolNetRPC,
+			plugin.ProtocolGRPC,
+		},
+		Logger: logger,
 	})
 
 	// Connect via RPC
@@ -67,26 +70,18 @@ func (p *ShellPlugin) Stop() error {
 }
 
 func (p *ShellPlugin) ListMethods() map[string]string {
-	return map[string]string {
+	return map[string]string{
 		"echo": "echo",
-		"sh": "sh",
+		"sh":   "sh",
 	}
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
-	reply := &shared.StreamLogsReply{}
-	err := scmClient.shell.Echo(args, reply)
-	if err == io.EOF {
-		return reply.Chunk
-	}
+	err := scmClient.shell.Echo(args)
 	return err.Error()
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
-	reply := &shared.StreamLogsReply{}
-	err := scmClient.shell.Sh(args, reply)
-	if err == io.EOF {
-		return reply.Chunk
-	}
+	err := scmClient.shell.Sh(args)
 	return err.Error()
 }
