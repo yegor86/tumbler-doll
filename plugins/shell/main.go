@@ -53,7 +53,8 @@ func (p *ShellPlugin) Start() error {
 	// Request the plugin
 	raw, err := rpcClient.Dispense("shell")
 	if err != nil {
-		return err
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
 	}
 
 	p.shell = raw.(shared.Shell)
