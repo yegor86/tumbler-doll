@@ -58,9 +58,9 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 	// err := g.client.Call("Plugin.Sh", args, reply)
 	cmd := args["text"].(string)
 	containerId := ""
-	if _, ok := args["containerId"]; ok {
-		containerId = args["containerId"].(string)
-	}
+	// if _, ok := args["containerId"]; ok {
+	// 	containerId = args["containerId"].(string)
+	// }
 	stream, err := g.client.Sh(context.Background(), &pb.LogRequest{
 		Command: cmd,
 		ContainerId: containerId,
@@ -74,7 +74,7 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 		resp, err := stream.Recv()
 		if err != nil {
 			streamErr = err
-			break // Stream finished
+			break
 		}
 		fmt.Println(resp.Chunk)
 	}

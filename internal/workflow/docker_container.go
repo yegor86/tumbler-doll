@@ -77,20 +77,21 @@ func (dm *DockerContainer) StopContainer(ctx context.Context, imageName string) 
 	return nil
 }
 
-func Containerize(next func(cmd, containerId string) (*bufio.Reader, error)) func(cmd, containerId string) (*bufio.Reader, error) {
-	return func(cmd, containerId string) (*bufio.Reader, error) {
+func Containerize(next func(cmd, containerId string) (*bufio.Scanner, func() error, error)) func(cmd, containerId string) (*bufio.Scanner, func() error, error) {
+	return func(cmd, containerId string) (*bufio.Scanner, func() error, error) {
 		if containerId == ""{
 			return next(cmd, containerId)
 		}
 		
 		terms := strings.Fields(cmd)
 		reader, err := ExecContainer(context.Background(), containerId, terms)
-		reader.ReadLine()
 
 		if err != nil {
-			return nil, fmt.Errorf("error attaching to container %s: %v", containerId, err)
+			return nil, nil, fmt.Errorf("error attaching to container %s: %v", containerId, err)
 		}
-		return reader, nil
+		return bufio.NewScanner(reader), func() error {
+			return nil
+		}, nil
 	}
 }
 
