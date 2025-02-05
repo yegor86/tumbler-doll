@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -12,6 +14,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"github.com/docker/docker/api/types"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
 	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
@@ -35,7 +38,8 @@ func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreaming
 	terms := strings.Fields(req.Command)
 	cmd := exec.Command(terms[0], terms[1:]...)
 	
-	next := func(containerId string) (*bufio.Scanner, error) {
+	
+	inputStreamConsumer := func() (*bufio.Scanner, error) {
 		stdout, err := cmd.StdoutPipe()
 		cmd.Stderr = cmd.Stdout
 		if err != nil {
@@ -48,13 +52,29 @@ func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreaming
 		scanner := bufio.NewScanner(stdout)
 		return scanner, nil
 	}
-	containerized := workflow.Containerize(req.Command, next)
-	scanner, err := containerized(req.ContainerId)
+	
+	if (req.ContainerId != "") {
+		var attachResp *types.HijackedResponse = nil
+		inputStreamConsumer = func() (*bufio.Scanner, error) {
+			var err error
+			attachResp, err = workflow.ExecContainer(context.Background(), req.ContainerId, terms)
+
+			if err != nil {
+				return nil, fmt.Errorf("error attaching to container %s: %v", req.ContainerId, err)
+			}
+			return bufio.NewScanner(attachResp.Reader), nil
+		}
+		if attachResp != nil {
+			defer attachResp.Close()
+		}
+	}
+
+	inStream, err := inputStreamConsumer()
 	if err != nil {
 		return err
 	}
 
-	err = g.readAll(scanner, res)
+	err = g.readAndSendBack(inStream, res)
 	if err != nil {
 		return err
 	}
@@ -62,12 +82,14 @@ func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreaming
 	return cmd.Wait()
 }
 
-func (g *ShellPluginImpl) readAll(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (g *ShellPluginImpl) readAndSendBack(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.LogResponse]) error {
 	for scanner.Scan() {
 		// Simulate streaming delay
 		time.Sleep(100 * time.Millisecond)
+		
 		// Send back a chunk of logs
-		res.Send(&pb.LogResponse{Chunk: scanner.Text()})
+		data := removeControlChars(scanner.Bytes())
+		res.Send(&pb.LogResponse{Chunk: string(data)})
 	}
 
 	return scanner.Err()

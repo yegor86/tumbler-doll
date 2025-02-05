@@ -41,17 +41,13 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 		return err
 	}
 
-	var streamErr error
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
-			streamErr = err
-			break // Stream finished
+			return err
 		}
 		fmt.Println(resp.Chunk)
 	}
-	
-	return streamErr
 }
 
 func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
@@ -68,17 +64,13 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 		return err
 	}
 
-	var streamErr error
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
-			streamErr = err
-			break
+			return err
 		}
 		fmt.Println(resp.Chunk)
 	}
-	
-	return streamErr
 }
 
 type ShellRPCServer struct {

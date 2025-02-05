@@ -1,7 +1,6 @@
 package workflow
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types"
 	dockerClient "github.com/docker/docker/client"
 )
 
@@ -77,24 +77,7 @@ func (dm *DockerContainer) StopContainer(ctx context.Context, imageName string) 
 	return nil
 }
 
-func Containerize(cmd string, next func(containerId string) (*bufio.Scanner, error)) func(containerId string) (*bufio.Scanner, error) {
-	return func(containerId string) (*bufio.Scanner, error) {
-		if containerId == ""{
-			return next(containerId)
-		}
-		
-		terms := strings.Fields(cmd)
-		reader, err := ExecContainer(context.Background(), containerId, terms)
-
-		if err != nil {
-			return nil, fmt.Errorf("error attaching to container %s: %v", containerId, err)
-		}
-		return bufio.NewScanner(reader), nil
-	}
-}
-
-func ExecContainer(ctx context.Context, containerId string, cmd []string) (*bufio.Reader, error) {
-	// Create a Docker client
+func ExecContainer(ctx context.Context, containerId string, cmd []string) (*types.HijackedResponse, error) {
 	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion(dockerClientVersion))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Docker client: %w", err)
@@ -115,18 +98,7 @@ func ExecContainer(ctx context.Context, containerId string, cmd []string) (*bufi
 	if err != nil {
 		return nil, fmt.Errorf("failed to start exec instance for command '%v': %w", cmd, err)
 	}
-	defer execAttachResp.Close()
-
-	// reader := bufio.NewReader(execAttachResp.Reader)
-	// execAttachResp.CloseWrite()
-	return execAttachResp.Reader, nil
-
-	// Capture the output
-	// output, err := io.ReadAll(execAttachResp.Reader)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to read output for command '%v': %w", cmd, err)
-	// }
-	// return removeControlChars(output), nil
+	return &execAttachResp, nil
 }
 
 // Append tag 'latest' to image without tag
