@@ -25,15 +25,15 @@ type ShellPluginImpl struct {
 	logger hclog.Logger
 }
 
-func (g *ShellPluginImpl) Echo(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (g *ShellPluginImpl) Echo(req *pb.ShellRequest, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	return g.execShell(req, res)
 }
 
-func (g *ShellPluginImpl) Sh(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (g *ShellPluginImpl) Sh(req *pb.ShellRequest, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	return g.execShell(req, res)	
 }
 
-func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	g.logger.Info("[Shell] sh '%s'...", req.Command)
 	terms := strings.Fields(req.Command)
 	cmd := exec.Command(terms[0], terms[1:]...)
@@ -82,14 +82,14 @@ func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreaming
 	return cmd.Wait()
 }
 
-func (g *ShellPluginImpl) readAndSendBack(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (g *ShellPluginImpl) readAndSendBack(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	for scanner.Scan() {
 		// Simulate streaming delay
 		time.Sleep(100 * time.Millisecond)
 		
 		// Send back a chunk of logs
 		data := removeControlChars(scanner.Bytes())
-		res.Send(&pb.LogResponse{Chunk: string(data)})
+		res.Send(&pb.ShellResponse{Chunk: string(data)})
 	}
 
 	return scanner.Err()

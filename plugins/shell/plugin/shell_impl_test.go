@@ -14,7 +14,7 @@ type DummyResponse struct {
 	grpc.ServerStream
 }
 
-func (r *DummyResponse) Send(resp *proto.LogResponse) error {
+func (r *DummyResponse) Send(resp *proto.ShellResponse) error {
 	return nil
 }
 
@@ -30,7 +30,7 @@ func Test_shell_command(t *testing.T) {
 		logger: logger,
 	}
 
-	err := shellImpl.Sh(&proto.LogRequest{
+	err := shellImpl.Sh(&proto.ShellRequest{
 		Command:     "mvn --version",
 		ContainerId: "",
 	}, &DummyResponse{})
@@ -39,7 +39,7 @@ func Test_shell_command(t *testing.T) {
 		t.Fatalf("Error executing plugin: %v", err)
 	}
 
-	err = shellImpl.Sh(&proto.LogRequest{
+	err = shellImpl.Sh(&proto.ShellRequest{
 		Command:     "java -version",
 		ContainerId: "",
 	}, &DummyResponse{})

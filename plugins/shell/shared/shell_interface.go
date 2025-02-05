@@ -15,13 +15,13 @@ type Shell interface {
 }
 
 type ServerShell interface {
-	Echo(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error
-	Sh(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error
+	Echo(request *pb.ShellRequest, response grpc.ServerStreamingServer[pb.ShellResponse]) error
+	Sh(request *pb.ShellRequest, response grpc.ServerStreamingServer[pb.ShellResponse]) error
 }
 
 // Here is an implementation that talks over RPC
 type ShellRPCClient struct{
-	client pb.LogStreamingServiceClient
+	client pb.ShellStreamingServiceClient
 	broker *plugin.GRPCBroker
 }
 
@@ -33,7 +33,7 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	stream, err := g.client.Echo(context.Background(), &pb.LogRequest{
+	stream, err := g.client.Echo(context.Background(), &pb.ShellRequest{
 		Command: cmd,
 		ContainerId: containerId,
 	})
@@ -56,7 +56,7 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	stream, err := g.client.Sh(context.Background(), &pb.LogRequest{
+	stream, err := g.client.Sh(context.Background(), &pb.ShellRequest{
 		Command: cmd,
 		ContainerId: containerId,
 	})
@@ -74,16 +74,16 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 }
 
 type ShellRPCServer struct {
-	pb.UnsafeLogStreamingServiceServer
+	pb.UnsafeShellStreamingServiceServer
 	Impl   ServerShell
 	broker *plugin.GRPCBroker
 }
 
-func (s *ShellRPCServer) Echo(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (s *ShellRPCServer) Echo(request *pb.ShellRequest, response grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	return s.Impl.Echo(request, response)
 }
 
-func (s *ShellRPCServer) Sh(request *pb.LogRequest, response grpc.ServerStreamingServer[pb.LogResponse]) error {
+func (s *ShellRPCServer) Sh(request *pb.ShellRequest, response grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	return s.Impl.Echo(request, response)
 }
 
@@ -94,7 +94,7 @@ type ServerShellPlugin struct {
 }
 
 func (p *ServerShellPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
-	pb.RegisterLogStreamingServiceServer(s, &ShellRPCServer{
+	pb.RegisterShellStreamingServiceServer(s, &ShellRPCServer{
 		Impl:   p.Impl,
 		broker: broker,
 	})
@@ -109,7 +109,7 @@ type ShellPlugin struct {
 
 func (p *ShellPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &ShellRPCClient{
-		client: pb.NewLogStreamingServiceClient(c), 
+		client: pb.NewShellStreamingServiceClient(c), 
 		broker: broker,
 	}, nil
 }

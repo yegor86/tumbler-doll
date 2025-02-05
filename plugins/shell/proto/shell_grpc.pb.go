@@ -19,35 +19,35 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LogStreamingService_Sh_FullMethodName   = "/logstream.LogStreamingService/Sh"
-	LogStreamingService_Echo_FullMethodName = "/logstream.LogStreamingService/Echo"
+	ShellStreamingService_Sh_FullMethodName   = "/shellstream.ShellStreamingService/Sh"
+	ShellStreamingService_Echo_FullMethodName = "/shellstream.ShellStreamingService/Echo"
 )
 
-// LogStreamingServiceClient is the client API for LogStreamingService service.
+// ShellStreamingServiceClient is the client API for ShellStreamingService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// LogStreamingService provides real-time streaming logs
-type LogStreamingServiceClient interface {
-	Sh(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error)
-	Echo(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error)
+// ShellStreamingService provides real-time streaming logs
+type ShellStreamingServiceClient interface {
+	Sh(ctx context.Context, in *ShellRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ShellResponse], error)
+	Echo(ctx context.Context, in *ShellRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ShellResponse], error)
 }
 
-type logStreamingServiceClient struct {
+type shellStreamingServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewLogStreamingServiceClient(cc grpc.ClientConnInterface) LogStreamingServiceClient {
-	return &logStreamingServiceClient{cc}
+func NewShellStreamingServiceClient(cc grpc.ClientConnInterface) ShellStreamingServiceClient {
+	return &shellStreamingServiceClient{cc}
 }
 
-func (c *logStreamingServiceClient) Sh(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error) {
+func (c *shellStreamingServiceClient) Sh(ctx context.Context, in *ShellRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ShellResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &LogStreamingService_ServiceDesc.Streams[0], LogStreamingService_Sh_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ShellStreamingService_ServiceDesc.Streams[0], ShellStreamingService_Sh_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[LogRequest, LogResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[ShellRequest, ShellResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -58,15 +58,15 @@ func (c *logStreamingServiceClient) Sh(ctx context.Context, in *LogRequest, opts
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LogStreamingService_ShClient = grpc.ServerStreamingClient[LogResponse]
+type ShellStreamingService_ShClient = grpc.ServerStreamingClient[ShellResponse]
 
-func (c *logStreamingServiceClient) Echo(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[LogResponse], error) {
+func (c *shellStreamingServiceClient) Echo(ctx context.Context, in *ShellRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ShellResponse], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &LogStreamingService_ServiceDesc.Streams[1], LogStreamingService_Echo_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &ShellStreamingService_ServiceDesc.Streams[1], ShellStreamingService_Echo_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &grpc.GenericClientStream[LogRequest, LogResponse]{ClientStream: stream}
+	x := &grpc.GenericClientStream[ShellRequest, ShellResponse]{ClientStream: stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -77,91 +77,91 @@ func (c *logStreamingServiceClient) Echo(ctx context.Context, in *LogRequest, op
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LogStreamingService_EchoClient = grpc.ServerStreamingClient[LogResponse]
+type ShellStreamingService_EchoClient = grpc.ServerStreamingClient[ShellResponse]
 
-// LogStreamingServiceServer is the server API for LogStreamingService service.
-// All implementations must embed UnimplementedLogStreamingServiceServer
+// ShellStreamingServiceServer is the server API for ShellStreamingService service.
+// All implementations must embed UnimplementedShellStreamingServiceServer
 // for forward compatibility.
 //
-// LogStreamingService provides real-time streaming logs
-type LogStreamingServiceServer interface {
-	Sh(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error
-	Echo(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error
-	mustEmbedUnimplementedLogStreamingServiceServer()
+// ShellStreamingService provides real-time streaming logs
+type ShellStreamingServiceServer interface {
+	Sh(*ShellRequest, grpc.ServerStreamingServer[ShellResponse]) error
+	Echo(*ShellRequest, grpc.ServerStreamingServer[ShellResponse]) error
+	mustEmbedUnimplementedShellStreamingServiceServer()
 }
 
-// UnimplementedLogStreamingServiceServer must be embedded to have
+// UnimplementedShellStreamingServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedLogStreamingServiceServer struct{}
+type UnimplementedShellStreamingServiceServer struct{}
 
-func (UnimplementedLogStreamingServiceServer) Sh(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error {
+func (UnimplementedShellStreamingServiceServer) Sh(*ShellRequest, grpc.ServerStreamingServer[ShellResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Sh not implemented")
 }
-func (UnimplementedLogStreamingServiceServer) Echo(*LogRequest, grpc.ServerStreamingServer[LogResponse]) error {
+func (UnimplementedShellStreamingServiceServer) Echo(*ShellRequest, grpc.ServerStreamingServer[ShellResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Echo not implemented")
 }
-func (UnimplementedLogStreamingServiceServer) mustEmbedUnimplementedLogStreamingServiceServer() {}
-func (UnimplementedLogStreamingServiceServer) testEmbeddedByValue()                             {}
+func (UnimplementedShellStreamingServiceServer) mustEmbedUnimplementedShellStreamingServiceServer() {}
+func (UnimplementedShellStreamingServiceServer) testEmbeddedByValue()                               {}
 
-// UnsafeLogStreamingServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to LogStreamingServiceServer will
+// UnsafeShellStreamingServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ShellStreamingServiceServer will
 // result in compilation errors.
-type UnsafeLogStreamingServiceServer interface {
-	mustEmbedUnimplementedLogStreamingServiceServer()
+type UnsafeShellStreamingServiceServer interface {
+	mustEmbedUnimplementedShellStreamingServiceServer()
 }
 
-func RegisterLogStreamingServiceServer(s grpc.ServiceRegistrar, srv LogStreamingServiceServer) {
-	// If the following call pancis, it indicates UnimplementedLogStreamingServiceServer was
+func RegisterShellStreamingServiceServer(s grpc.ServiceRegistrar, srv ShellStreamingServiceServer) {
+	// If the following call pancis, it indicates UnimplementedShellStreamingServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&LogStreamingService_ServiceDesc, srv)
+	s.RegisterService(&ShellStreamingService_ServiceDesc, srv)
 }
 
-func _LogStreamingService_Sh_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(LogRequest)
+func _ShellStreamingService_Sh_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ShellRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(LogStreamingServiceServer).Sh(m, &grpc.GenericServerStream[LogRequest, LogResponse]{ServerStream: stream})
+	return srv.(ShellStreamingServiceServer).Sh(m, &grpc.GenericServerStream[ShellRequest, ShellResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LogStreamingService_ShServer = grpc.ServerStreamingServer[LogResponse]
+type ShellStreamingService_ShServer = grpc.ServerStreamingServer[ShellResponse]
 
-func _LogStreamingService_Echo_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(LogRequest)
+func _ShellStreamingService_Echo_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ShellRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(LogStreamingServiceServer).Echo(m, &grpc.GenericServerStream[LogRequest, LogResponse]{ServerStream: stream})
+	return srv.(ShellStreamingServiceServer).Echo(m, &grpc.GenericServerStream[ShellRequest, ShellResponse]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type LogStreamingService_EchoServer = grpc.ServerStreamingServer[LogResponse]
+type ShellStreamingService_EchoServer = grpc.ServerStreamingServer[ShellResponse]
 
-// LogStreamingService_ServiceDesc is the grpc.ServiceDesc for LogStreamingService service.
+// ShellStreamingService_ServiceDesc is the grpc.ServiceDesc for ShellStreamingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var LogStreamingService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "logstream.LogStreamingService",
-	HandlerType: (*LogStreamingServiceServer)(nil),
+var ShellStreamingService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "shellstream.ShellStreamingService",
+	HandlerType: (*ShellStreamingServiceServer)(nil),
 	Methods:     []grpc.MethodDesc{},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Sh",
-			Handler:       _LogStreamingService_Sh_Handler,
+			Handler:       _ShellStreamingService_Sh_Handler,
 			ServerStreams: true,
 		},
 		{
 			StreamName:    "Echo",
-			Handler:       _LogStreamingService_Echo_Handler,
+			Handler:       _ShellStreamingService_Echo_Handler,
 			ServerStreams: true,
 		},
 	},
