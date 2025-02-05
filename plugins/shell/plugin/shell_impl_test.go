@@ -31,6 +31,15 @@ func Test_shell_command(t *testing.T) {
 	}
 
 	err := shellImpl.Sh(&proto.LogRequest{
+		Command:     "mvn --version",
+		ContainerId: "",
+	}, &DummyResponse{})
+
+	if err != nil && err != io.EOF {
+		t.Fatalf("Error executing plugin: %v", err)
+	}
+
+	err = shellImpl.Sh(&proto.LogRequest{
 		Command:     "java -version",
 		ContainerId: "",
 	}, &DummyResponse{})

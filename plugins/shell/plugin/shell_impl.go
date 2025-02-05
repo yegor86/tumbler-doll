@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -24,60 +23,54 @@ type ShellPluginImpl struct {
 }
 
 func (g *ShellPluginImpl) Echo(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
-
-	return g.Sh(&pb.LogRequest{
-		Command:     "echo " + req.Command,
-		ContainerId: req.ContainerId,
-	}, res)
+	return g.execShell(req, res)
 }
 
 func (g *ShellPluginImpl) Sh(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+	return g.execShell(req, res)	
+}
 
-	next := func(cmd, containerId string) (*bufio.Scanner, func() error, error) {
-		g.logger.Info("[Shell] sh '%s'...", cmd)
-		terms := strings.Fields(cmd)
-
-		execCommand := exec.Command(terms[0], terms[1:]...)
-		stdout, err := execCommand.StdoutPipe()
-		execCommand.Stderr = execCommand.Stdout
+func (g *ShellPluginImpl) execShell(req *pb.LogRequest, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+	g.logger.Info("[Shell] sh '%s'...", req.Command)
+	terms := strings.Fields(req.Command)
+	cmd := exec.Command(terms[0], terms[1:]...)
+	
+	next := func(containerId string) (*bufio.Scanner, error) {
+		stdout, err := cmd.StdoutPipe()
+		cmd.Stderr = cmd.Stdout
 		if err != nil {
 			g.logger.Error("[Shell] Plugin error %v", err)
-			return nil, nil, err
+			return nil, err
 		}
-		if err = execCommand.Start(); err != nil {
-			return nil, nil, err
+		if err = cmd.Start(); err != nil {
+			return nil, err
 		}
 		scanner := bufio.NewScanner(stdout)
-		return scanner, func() error {
-			return execCommand.Wait()
-		}, nil
+		return scanner, nil
 	}
-	containerized := workflow.Containerize(next)
-	scanner, waitFunc, err := containerized(req.Command, req.ContainerId)
+	containerized := workflow.Containerize(req.Command, next)
+	scanner, err := containerized(req.ContainerId)
 	if err != nil {
 		return err
 	}
-	err = readAll(scanner, res)
-	if err != nil && err != io.EOF {
-		return nil
-	}
 
-	err = waitFunc()
-	return err
-}
-
-func readAll(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.LogResponse]) error {
-	for scanner.Scan() {
-		// Send back a chunk of logs
-		res.Send(&pb.LogResponse{Chunk: scanner.Text()})
-		time.Sleep(100 * time.Millisecond) // Simulate streaming delay
-	}
-
-	// Check for errors in scanner
-	if err := scanner.Err(); err != nil {
+	err = g.readAll(scanner, res)
+	if err != nil {
 		return err
 	}
-	return nil
+
+	return cmd.Wait()
+}
+
+func (g *ShellPluginImpl) readAll(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.LogResponse]) error {
+	for scanner.Scan() {
+		// Simulate streaming delay
+		time.Sleep(100 * time.Millisecond)
+		// Send back a chunk of logs
+		res.Send(&pb.LogResponse{Chunk: scanner.Text()})
+	}
+
+	return scanner.Err()
 }
 
 // RemoveControlChars removes non-printable ASCII characters from byte array and return human readble string.
@@ -99,7 +92,7 @@ var handshakeConfig = plugin.HandshakeConfig{
 func main() {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Level:      hclog.Debug,
-		Output:     os.Stdout,
+		Output:     os.Stderr,
 		JSONFormat: true,
 	})
 

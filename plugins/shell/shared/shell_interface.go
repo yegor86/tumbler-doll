@@ -55,12 +55,11 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 }
 
 func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
-	// err := g.client.Call("Plugin.Sh", args, reply)
 	cmd := args["text"].(string)
 	containerId := ""
-	// if _, ok := args["containerId"]; ok {
-	// 	containerId = args["containerId"].(string)
-	// }
+	if _, ok := args["containerId"]; ok {
+		containerId = args["containerId"].(string)
+	}
 	stream, err := g.client.Sh(context.Background(), &pb.LogRequest{
 		Command: cmd,
 		ContainerId: containerId,
@@ -96,12 +95,6 @@ func (s *ShellRPCServer) Sh(request *pb.LogRequest, response grpc.ServerStreamin
 	return s.Impl.Echo(request, response)
 }
 
-type ShellPlugin struct {
-	plugin.GRPCPlugin
-	plugin.NetRPCUnsupportedPlugin
-	Impl Shell
-}
-
 type ServerShellPlugin struct {
 	plugin.GRPCPlugin
 	plugin.NetRPCUnsupportedPlugin
@@ -114,6 +107,12 @@ func (p *ServerShellPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server
 		broker: broker,
 	})
 	return nil
+}
+
+type ShellPlugin struct {
+	plugin.GRPCPlugin
+	plugin.NetRPCUnsupportedPlugin
+	Impl Shell
 }
 
 func (p *ShellPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
