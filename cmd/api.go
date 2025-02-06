@@ -10,8 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	cli "github.com/spf13/cobra"
-
-	wfClient "go.temporal.io/sdk/client"
+	temporal "go.temporal.io/sdk/client"
 
 	"github.com/yegor86/tumbler-doll/internal/api/v1/handler"
 )
@@ -28,11 +27,7 @@ var (
 		Run: func(cmd *cli.Command, args []string) {
 			var err error
 
-			client, err := wfClient.Dial(wfClient.Options{})
-			if err != nil {
-				log.Fatalln("Unable to create Workflow client", err)
-			}
-			defer client.Close()
+			wfClient := cmd.Context().Value("wfClient").(temporal.Client);
 
 			// Create the router and server config
 			router, err := newRouter()
@@ -43,8 +38,8 @@ var (
 			router.Get("/upload", handler.UploadForm)
 			router.Get("/jobs", handler.ListJobs("/"))
 			router.Get("/jobs/*", handler.ListJobs("/"))
-			router.Post("/submit/*", handler.SubmitJob(client))
-			router.Post("/uploadfile", handler.UploadFile(client))
+			router.Post("/submit/*", handler.SubmitJob(wfClient))
+			router.Post("/uploadfile", handler.UploadFile(wfClient))
 
 			// Create a server
 			s := http.Server{

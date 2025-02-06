@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	temporal "go.temporal.io/sdk/client"
 
 	"github.com/yegor86/tumbler-doll/cmd"
 	"github.com/yegor86/tumbler-doll/internal/cryptography"
@@ -32,7 +34,7 @@ func main() {
 	for name, plugin := range plugins {
 		err := pluginManager.Register(name, plugin)
 		if err != nil {
-			slog.Warn("Failed to register plugin %s: %v", name, err)
+			log.Printf("Failed to register plugin %s: %v", name, err)
 		}
 	}
 
@@ -45,7 +47,13 @@ func main() {
 
 	exitOnSyscall(pluginManager)
 
-	cmd.Execute()
+	client, err := temporal.Dial(temporal.Options{})
+	if err != nil {
+		log.Fatalf("Unable to create Workflow client", err)
+	}
+	defer client.Close()
+
+	cmd.Execute(client)
 }
 
 func exitOnSyscall(pluginManager *plugins.PluginManager) {
@@ -53,7 +61,7 @@ func exitOnSyscall(pluginManager *plugins.PluginManager) {
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-signals
-		slog.Warn("Shutting down...")
+		log.Printf("Shutting down...")
 
 		pluginManager.UnregisterAll()
 

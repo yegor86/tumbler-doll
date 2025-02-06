@@ -11,6 +11,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cli "github.com/spf13/cobra"
+	temporal "go.temporal.io/sdk/client"
+	"golang.org/x/net/context"
 )
 
 func init() {
@@ -76,8 +78,9 @@ var (
 )
 
 // Execute starts the program
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+func Execute(client temporal.Client) {
+	ctx := context.WithValue(context.Background(), "wfClient", client)
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
 }

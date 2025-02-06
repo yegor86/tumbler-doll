@@ -3,9 +3,10 @@ package shared
 import (
 	"context"
 	"fmt"
-	
-	"google.golang.org/grpc"
+
 	"github.com/hashicorp/go-plugin"
+	"google.golang.org/grpc"
+
 	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
 )
 
@@ -20,21 +21,30 @@ type ServerShell interface {
 }
 
 // Here is an implementation that talks over RPC
-type ShellRPCClient struct{
-	client pb.ShellStreamingServiceClient
-	broker *plugin.GRPCBroker
+type ShellRPCClient struct {
+	client   pb.ShellStreamingServiceClient
+	broker   *plugin.GRPCBroker
 }
 
 func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 	// err := g.client.Call("Plugin.Echo", args, reply)
-	
+
 	cmd := "echo " + args["text"].(string)
 	containerId := ""
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
+	// workflowExecutionId := ""
+	// if _, ok := args["workflowExecutionId"]; ok {
+	// 	workflowExecutionId = args["workflowExecutionId"].(string)
+	// }
+	// logSignalName := ""
+	// if _, ok := args["logSignalName"]; ok {
+	// 	workflowExecutionId = args["logSignalName"].(string)
+	// }
+
 	stream, err := g.client.Echo(context.Background(), &pb.ShellRequest{
-		Command: cmd,
+		Command:     cmd,
 		ContainerId: containerId,
 	})
 	if err != nil {
@@ -46,18 +56,34 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 		if err != nil {
 			return err
 		}
+		// if g.wfClient != nil && workflowExecutionId != "" && logSignalName != "" {
+		// 	err = g.wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		// }
+		// if err != nil {
+		// 	return err
+		// }
 		fmt.Println(resp.Chunk)
 	}
 }
 
 func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
+	ctx := context.Background()
 	cmd := args["text"].(string)
 	containerId := ""
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	stream, err := g.client.Sh(context.Background(), &pb.ShellRequest{
-		Command: cmd,
+	// workflowExecutionId := ""
+	// if _, ok := args["workflowExecutionId"]; ok {
+	// 	workflowExecutionId = args["workflowExecutionId"].(string)
+	// }
+	// logSignalName := ""
+	// if _, ok := args["logSignalName"]; ok {
+	// 	workflowExecutionId = args["logSignalName"].(string)
+	// }
+
+	stream, err := g.client.Sh(ctx, &pb.ShellRequest{
+		Command:     cmd,
 		ContainerId: containerId,
 	})
 	if err != nil {
@@ -69,6 +95,12 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 		if err != nil {
 			return err
 		}
+		// if g.wfClient != nil && workflowExecutionId != "" && logSignalName != "" {
+		// 	err = g.wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		// }
+		// if err != nil {
+		// 	return err
+		// }
 		fmt.Println(resp.Chunk)
 	}
 }
@@ -109,7 +141,7 @@ type ShellPlugin struct {
 
 func (p *ShellPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &ShellRPCClient{
-		client: pb.NewShellStreamingServiceClient(c), 
+		client: pb.NewShellStreamingServiceClient(c),
 		broker: broker,
 	}, nil
 }

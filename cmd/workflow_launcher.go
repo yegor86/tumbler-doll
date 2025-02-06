@@ -3,7 +3,7 @@ package cmd
 import (
 	"log"
 
-	"go.temporal.io/sdk/client"
+	temporal "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 
 	cli "github.com/spf13/cobra"
@@ -22,13 +22,13 @@ var (
 		Long:  `Start Workflow`,
 		Run: func(cmd *cli.Command, args []string) {
 			// The client and worker are heavyweight objects that should be created once per process.
-			c, err := client.Dial(client.Options{})
+			client, err := temporal.Dial(temporal.Options{})
 			if err != nil {
 				log.Fatalln("Unable to create Workflow client", err)
 			}
-			defer c.Close()
+			defer client.Close()
 
-			w := worker.New(c, "JobQueue", worker.Options{})
+			w := worker.New(client, "JobQueue", worker.Options{})
 
 			w.RegisterWorkflow(workflow.GroovyDSLWorkflow)
 			w.RegisterActivity(&workflow.StageActivities{})

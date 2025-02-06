@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -24,9 +23,9 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 			return
 		}
-		
+
 		jobDB := jobs.GetInstance()
-		
+
 		jobPath := chi.URLParam(r, "*")
 		job := jobDB.FindJobs(jobPath)
 		if job == nil {
@@ -41,12 +40,13 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			return
 		}
 
+		context := r.Context()
 		workflowOptions := temporal.StartWorkflowOptions{
 			ID:        job.Name + "/" + uuid.New().String(),
 			TaskQueue: "JobQueue",
 		}
-		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
-		
+		we, err := wfClient.ExecuteWorkflow(context, workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
+
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
 			http.Error(w, "Error executing workflow", http.StatusInternalServerError)

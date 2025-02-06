@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/yegor86/tumbler-doll/plugins"
+	"go.temporal.io/sdk/activity"
 )
 
 type StageActivities struct {
@@ -26,10 +27,16 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		}
 		defer dockerContainer.StopContainer(ctx, string(agent.Docker.Image))
 	}
+
+	// Get workflow information to send signals
+	info := activity.GetInfo(ctx)
 	
 	pluginManager := plugins.GetInstance()
 	for _, step := range steps {
 		command, params := step.ToCommand()
+		
+		params["workflowExecutionId"] = info.WorkflowExecution.ID
+		params["logSignalName"] = ctx.Value("logSignalName")
 		if dockerContainer != nil {
 			params["containerId"] = dockerContainer.ContainerId
 		}
