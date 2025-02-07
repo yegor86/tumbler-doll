@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -74,6 +75,19 @@ func (o *QuotedString) Capture(values []string) error {
 
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
 	logger := workflow.GetLogger(ctx)
+
+	// Create a channel to receive log updates
+	logChan := workflow.GetSignalChannel(ctx, "logs")
+	workflow.Go(ctx, func(ctx workflow.Context) {
+		for {
+			var logLine string
+			if more := logChan.Receive(ctx, &logLine); !more {
+				break
+			}
+			workflow.GetLogger(ctx).Info("Received log: " + logLine)
+			log.Printf("Received next line: %s", logLine)
+		}
+	})
 
 	variables := make(map[string]string)
 	results := make(map[string]any)

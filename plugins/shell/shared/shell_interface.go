@@ -21,7 +21,6 @@ type ServerShell interface {
 	Sh(request *pb.ShellRequest, response grpc.ServerStreamingServer[pb.ShellResponse]) error
 }
 
-// Here is an implementation that talks over RPC
 type ShellRPCClient struct {
 	client   pb.ShellStreamingServiceClient
 	broker   *plugin.GRPCBroker
@@ -39,10 +38,6 @@ func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) 
 	if _, ok := args["workflowExecutionId"]; ok {
 		workflowExecutionId = args["workflowExecutionId"].(string)
 	}
-	logSignalName := ""
-	if _, ok := args["logSignalName"]; ok {
-		workflowExecutionId = args["logSignalName"].(string)
-	}
 
 	stream, err := g.client.Echo(context.Background(), &pb.ShellRequest{
 		Command:     cmd,
@@ -58,8 +53,8 @@ func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) 
 		if err != nil {
 			return err
 		}
-		if workflowExecutionId != "" && logSignalName != "" {
-			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		if workflowExecutionId != "" {
+			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", "logs", resp.Chunk)
 		}
 		if err != nil {
 			return err
@@ -78,11 +73,7 @@ func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) er
 	if _, ok := args["workflowExecutionId"]; ok {
 		workflowExecutionId = args["workflowExecutionId"].(string)
 	}
-	logSignalName := ""
-	if _, ok := args["logSignalName"]; ok {
-		workflowExecutionId = args["logSignalName"].(string)
-	}
-
+	
 	stream, err := g.client.Sh(ctx, &pb.ShellRequest{
 		Command:     cmd,
 		ContainerId: containerId,
@@ -97,8 +88,8 @@ func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) er
 		if err != nil {
 			return err
 		}
-		if workflowExecutionId != "" && logSignalName != "" {
-			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		if workflowExecutionId != "" {
+			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", "logs", resp.Chunk)
 		}
 		if err != nil {
 			return err

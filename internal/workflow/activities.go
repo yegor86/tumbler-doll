@@ -36,7 +36,6 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		command, params := step.ToCommand()
 		
 		params["workflowExecutionId"] = info.WorkflowExecution.ID
-		params["logSignalName"] = ctx.Value("logSignalName")
 		if dockerContainer != nil {
 			params["containerId"] = dockerContainer.ContainerId
 		}
