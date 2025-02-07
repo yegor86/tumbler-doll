@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -23,6 +24,12 @@ func main() {
 	crypto := cryptography.GetInstance()
 	crypto.LoadOrSeedCrypto()
 
+	wfClient, err := temporal.Dial(temporal.Options{})
+	if err != nil {
+		log.Fatalf("Unable to create Workflow client: %v", err)
+	}
+	defer wfClient.Close()
+
 	pluginManager := plugins.GetInstance()
 	defer pluginManager.UnregisterAll()
 
@@ -31,8 +38,9 @@ func main() {
 		"shell": &shell.ShellPlugin{},
 	}
 
+	ctx := context.WithValue(context.Background(), "wfClient", wfClient)
 	for name, plugin := range plugins {
-		err := pluginManager.Register(name, plugin)
+		err := pluginManager.Register(ctx, name, plugin)
 		if err != nil {
 			log.Printf("Failed to register plugin %s: %v", name, err)
 		}
@@ -47,13 +55,7 @@ func main() {
 
 	exitOnSyscall(pluginManager)
 
-	client, err := temporal.Dial(temporal.Options{})
-	if err != nil {
-		log.Fatalf("Unable to create Workflow client", err)
-	}
-	defer client.Close()
-
-	cmd.Execute(client)
+	cmd.Execute(wfClient)
 }
 
 func exitOnSyscall(pluginManager *plugins.PluginManager) {

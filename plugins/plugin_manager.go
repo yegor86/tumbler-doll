@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -12,7 +13,7 @@ type MethodInfo struct {
 }
 
 type Plugin interface {
-	Start() error
+	Start(ctx context.Context) error
 	Stop() error
 	ListMethods() map[string]string
 }
@@ -38,11 +39,11 @@ func GetInstance() *PluginManager {
 	return instance
 }
 
-func (pm *PluginManager) Register(name string, plugin Plugin) error {
+func (pm *PluginManager) Register(ctx context.Context, name string, plugin Plugin) error {
 	if _, exists := pm.plugins[name]; exists {
 		return fmt.Errorf("plugin %q already registered", name)
 	}
-	if err := plugin.Start(); err != nil {
+	if err := plugin.Start(ctx); err != nil {
 		return fmt.Errorf("failed to init plugin %q: %w", name, err)
 	}
 
@@ -131,7 +132,7 @@ func (pm *PluginManager) Execute(pluginName string, methodName string, args map[
 	if len(results) == 2 && results[1].IsNil() {
 		return results[0].Interface(), nil
 	} else if len(results) == 2 && !results[1].IsNil() {
-		return results[0].Interface(), results[1].Interface().(error)	
+		return results[0].Interface(), results[1].Interface().(error)
 	}
 
 	// Return multiple results as a slice

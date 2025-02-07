@@ -8,11 +8,12 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
+	temporal "go.temporal.io/sdk/client"
 )
 
-type Shell interface {
-	Echo(args map[string]interface{}) error
-	Sh(args map[string]interface{}) error
+type ClientShell interface {
+	Echo(ctx context.Context, args map[string]interface{}) error
+	Sh(ctx context.Context, args map[string]interface{}) error
 }
 
 type ServerShell interface {
@@ -26,7 +27,7 @@ type ShellRPCClient struct {
 	broker   *plugin.GRPCBroker
 }
 
-func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
+func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) error {
 	// err := g.client.Call("Plugin.Echo", args, reply)
 
 	cmd := "echo " + args["text"].(string)
@@ -34,14 +35,14 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	// workflowExecutionId := ""
-	// if _, ok := args["workflowExecutionId"]; ok {
-	// 	workflowExecutionId = args["workflowExecutionId"].(string)
-	// }
-	// logSignalName := ""
-	// if _, ok := args["logSignalName"]; ok {
-	// 	workflowExecutionId = args["logSignalName"].(string)
-	// }
+	workflowExecutionId := ""
+	if _, ok := args["workflowExecutionId"]; ok {
+		workflowExecutionId = args["workflowExecutionId"].(string)
+	}
+	logSignalName := ""
+	if _, ok := args["logSignalName"]; ok {
+		workflowExecutionId = args["logSignalName"].(string)
+	}
 
 	stream, err := g.client.Echo(context.Background(), &pb.ShellRequest{
 		Command:     cmd,
@@ -51,36 +52,36 @@ func (g *ShellRPCClient) Echo(args map[string]interface{}) error {
 		return err
 	}
 
+	wfClient := ctx.Value("wfClient").(temporal.Client)
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
 			return err
 		}
-		// if g.wfClient != nil && workflowExecutionId != "" && logSignalName != "" {
-		// 	err = g.wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
-		// }
-		// if err != nil {
-		// 	return err
-		// }
+		if workflowExecutionId != "" && logSignalName != "" {
+			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		}
+		if err != nil {
+			return err
+		}
 		fmt.Println(resp.Chunk)
 	}
 }
 
-func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
-	ctx := context.Background()
+func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) error {
 	cmd := args["text"].(string)
 	containerId := ""
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	// workflowExecutionId := ""
-	// if _, ok := args["workflowExecutionId"]; ok {
-	// 	workflowExecutionId = args["workflowExecutionId"].(string)
-	// }
-	// logSignalName := ""
-	// if _, ok := args["logSignalName"]; ok {
-	// 	workflowExecutionId = args["logSignalName"].(string)
-	// }
+	workflowExecutionId := ""
+	if _, ok := args["workflowExecutionId"]; ok {
+		workflowExecutionId = args["workflowExecutionId"].(string)
+	}
+	logSignalName := ""
+	if _, ok := args["logSignalName"]; ok {
+		workflowExecutionId = args["logSignalName"].(string)
+	}
 
 	stream, err := g.client.Sh(ctx, &pb.ShellRequest{
 		Command:     cmd,
@@ -90,17 +91,18 @@ func (g *ShellRPCClient) Sh(args map[string]interface{}) error {
 		return err
 	}
 
+	wfClient := ctx.Value("wfClient").(temporal.Client)
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
 			return err
 		}
-		// if g.wfClient != nil && workflowExecutionId != "" && logSignalName != "" {
-		// 	err = g.wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
-		// }
-		// if err != nil {
-		// 	return err
-		// }
+		if workflowExecutionId != "" && logSignalName != "" {
+			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", logSignalName, resp.Chunk)
+		}
+		if err != nil {
+			return err
+		}
 		fmt.Println(resp.Chunk)
 	}
 }
@@ -136,7 +138,7 @@ func (p *ServerShellPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server
 type ShellPlugin struct {
 	plugin.GRPCPlugin
 	plugin.NetRPCUnsupportedPlugin
-	Impl Shell
+	Impl ClientShell
 }
 
 func (p *ShellPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {

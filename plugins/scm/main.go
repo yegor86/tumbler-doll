@@ -1,6 +1,7 @@
 package scm
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +27,7 @@ var pluginMap = map[string]plugin.Plugin{
 	"scm": &shared.ScmPlugin{},
 }
 
-func (p *ScmPlugin) Start() error {
+func (p *ScmPlugin) Start(ctx context.Context) error {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Output: os.Stdout,

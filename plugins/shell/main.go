@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,8 +13,9 @@ import (
 )
 
 type ShellPlugin struct {
-	shell  shared.Shell
-	client *plugin.Client
+	shell  shared.ClientShell
+	pluginClient *plugin.Client
+	ctx context.Context
 }
 
 var handshakeConfig = plugin.HandshakeConfig{
@@ -26,7 +29,7 @@ var pluginMap = map[string]plugin.Plugin{
 	"shell": &shared.ShellPlugin{},
 }
 
-func (p *ShellPlugin) Start() error {
+func (p *ShellPlugin) Start(ctx context.Context) error {
 	logger := hclog.New(&hclog.LoggerOptions{
 		Name:   "plugin",
 		Output: os.Stdout,
@@ -57,16 +60,17 @@ func (p *ShellPlugin) Start() error {
 		os.Exit(1)
 	}
 
-	p.shell = raw.(shared.Shell)
-	p.client = client
+	p.shell = raw.(shared.ClientShell)
+	p.pluginClient = client
+	p.ctx = ctx
 	return nil
 }
 
 func (p *ShellPlugin) Stop() error {
-	if p.client == nil {
-		return fmt.Errorf("bash plugin is not initialized")
+	if p.pluginClient == nil {
+		return errors.New("shell plugin is not initialized")
 	}
-	p.client.Kill()
+	p.pluginClient.Kill()
 	return nil
 }
 
@@ -78,11 +82,11 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
-	err := scmClient.shell.Echo(args)
+	err := scmClient.shell.Echo(scmClient.ctx, args)
 	return err.Error()
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
-	err := scmClient.shell.Sh(args)
+	err := scmClient.shell.Sh(scmClient.ctx, args)
 	return err.Error()
 }
