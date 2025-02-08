@@ -40,6 +40,7 @@ var (
 			router.Get("/jobs/*", handler.ListJobs("/"))
 			router.Post("/submit/*", handler.SubmitJob(wfClient))
 			router.Post("/uploadfile", handler.UploadFile(wfClient))
+			router.HandleFunc("/stream/*", handler.StreamLogs(wfClient))
 
 			// Create a server
 			s := http.Server{

@@ -1,30 +1,37 @@
 package handler
 
 import (
-    "bufio"
-    "fmt"
-    "net/http"
-    "os/exec"
-    "time"
+	"fmt"
+	"net/http"
+	"time"
+
+	temporal "go.temporal.io/sdk/client"
 )
 
-func StreamLogs(w http.ResponseWriter, r *http.Request) {
-    // Set headers for SSE
-    w.Header().Set("Content-Type", "text/event-stream")
-    w.Header().Set("Cache-Control", "no-cache")
-    w.Header().Set("Connection", "keep-alive")
-    w.Header().Set("Access-Control-Allow-Origin", "*")
+func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Set headers for SSE
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
-    // Run a command and stream its output
-    cmd := exec.Command("ping", "-c", "5", "google.com") // Replace with your command
-    stdout, _ := cmd.StdoutPipe()
-    cmd.Start()
+        workflowId := r.URL.Query().Get("workflowId")
+        
+        for {
+            var msg string
+            msgEncoded, err := wfClient.QueryWorkflow(r.Context(), workflowId, "", "getLogs")
+            if err != nil {
+                break
+            }
 
-    scanner := bufio.NewScanner(stdout)
-    for scanner.Scan() {
-        fmt.Fprintf(w, "data: %s\n\n", scanner.Text())
-        w.(http.Flusher).Flush() // Flush output to client
-        time.Sleep(500 * time.Millisecond) // Simulate delay
-    }
-    cmd.Wait()
+            msgEncoded.Get(&msg)
+            if msg != "" {
+                fmt.Fprintf(w, "%s\n", msg)
+			    w.(http.Flusher).Flush()
+            }
+			time.Sleep(500 * time.Millisecond)
+        }
+        fmt.Fprintf(w, "Completed workflow: WorkflowID=%s", workflowId)
+	}
 }

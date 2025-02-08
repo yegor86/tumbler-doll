@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,12 @@ import (
 var (
 	dslParser workflow.DslParser
 )
+
+type SubmitJobResponse struct {
+	Status string
+	WorkflowID string
+	RunId string
+}
 
 // Handler function for POST /submit/{jobpath}
 func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
@@ -54,6 +61,12 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			return
 		}
 
-		fmt.Fprintf(w, "Started workflow: WorkflowID=%s, RunID=%s", we.GetID(), we.GetRunID())
+		if err := json.NewEncoder(w).Encode(SubmitJobResponse {
+			Status: "Started workflow: WorkflowID=%s, RunID=%s",
+			WorkflowID: we.GetID(),
+			RunId: we.GetRunID(),
+		}); err != nil {
+			http.Error(w, "Failed to encode jobs as JSON", http.StatusInternalServerError)
+		}
 	}
 }

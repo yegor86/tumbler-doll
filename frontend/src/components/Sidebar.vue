@@ -42,6 +42,8 @@
         try {
             const jobPath = this.$route.fullPath; // .replace(/\/jobs\//g, '/')
             const response = await apiService.submitJob(jobPath);
+
+            apiService.streamJobExec(this.$route.fullPath, response.data.WorkflowID);
             
             this.$emit('statusChange', { Status: 'running', Message: response.data });
 

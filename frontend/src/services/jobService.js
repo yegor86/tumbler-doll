@@ -19,8 +19,8 @@ export default {
     return apiClient.post(`/submit/${jobPath}`);
   },
 
-  streamJobExec(jobPath) {
-    const eventSource = new EventSource(`/stream/${jobPath}`);
+  streamJobExec(jobPath, workflowId) {
+    const eventSource = new EventSource(`http://localhost:8888/stream/${jobPath}?workflowId=${workflowId}`);
     return eventSource;
   },
 };

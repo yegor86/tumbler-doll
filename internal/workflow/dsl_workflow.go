@@ -1,8 +1,9 @@
 package workflow
 
 import (
-	"log"
+	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -76,16 +77,41 @@ func (o *QuotedString) Capture(values []string) error {
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
 	logger := workflow.GetLogger(ctx)
 
-	// Create a channel to receive log updates
-	logChan := workflow.GetSignalChannel(ctx, "logs")
+	var streamLines []string = []string{}
+	var streamError error = nil
+	var lock sync.RWMutex
+	// Register Query Handler to get logs
+	err := workflow.SetQueryHandler(ctx, "getLogs", func() (string, error) {
+		if streamError != nil {
+			return "", streamError
+		}
+		line := ""
+		if len(streamLines) > 0 {
+			lock.Lock()
+			line, streamLines = streamLines[0], streamLines[1:]
+			lock.Unlock()
+			return line, nil
+		}
+		return "", nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
 		for {
 			var logLine string
-			if more := logChan.Receive(ctx, &logLine); !more {
+			if more := temporalChan.Receive(ctx, &logLine); !more {
+				streamError = io.EOF
 				break
 			}
-			workflow.GetLogger(ctx).Info("Received log: " + logLine)
-			log.Printf("Received next line: %s", logLine)
+			lock.Lock()
+			streamLines = append(streamLines, logLine)
+			lock.Unlock()
+
+			// workflow.GetLogger(ctx).Info("Received log: " + logLine)
+			// log.Printf("Received next line: %s", logLine)
 		}
 	})
 
@@ -97,7 +123,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any,
 		}
 	}
 
-	logger.Info("Grrovy Workflow completed.")
+	logger.Info("Groovy Workflow completed.")
 	return results, nil
 }
 
