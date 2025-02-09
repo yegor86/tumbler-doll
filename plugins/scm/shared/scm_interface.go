@@ -18,9 +18,7 @@ func (g *ScmRPCClient) Checkout(args map[string]interface{}) (string, error) {
 	var resp []string
 	err := g.client.Call("Plugin.Checkout", args, &resp)
 	if err != nil{
-		// You usually want your interfaces to return errors. If they don't,
-		// there isn't much other choice here.
-		panic(err)
+		return "", err
 	}
 	result := resp[0]
 	errMessage := resp[1]
