@@ -27,6 +27,9 @@
 
   export default {
     name: "SideBar",
+    emits: [
+      "statusChange",
+    ],
     props: {
       isFolder: {
         type: Boolean,
@@ -43,9 +46,9 @@
             const jobPath = this.$route.fullPath; // .replace(/\/jobs\//g, '/')
             const response = await apiService.submitJob(jobPath);
 
-            apiService.streamJobExec(this.$route.fullPath, response.data.WorkflowID);
+            // apiService.streamJobExec(this.$route.fullPath, response.data.WorkflowID);
             
-            this.$emit('statusChange', { Status: 'running', Message: response.data });
+            this.$emit('statusChange', { WorkflowID: response.data.WorkflowID } );
 
         } catch (error) {
             this.error = "Error fetching jobs";

@@ -1,5 +1,5 @@
 <template>
-  <div class="job-details" @statusChange="handleStatusChange">
+  <div class="job-details">
     <!-- Header -->
     <div class="header">
       <h1>{{ job.Name }}</h1>
@@ -10,23 +10,28 @@
 
     <div class="content">
       <!-- Main Panel -->
-      <main class="main-panel">
+      <div class="main-panel">
         <section class="build-summary">
           <h2>Last Build</h2>
           <p>Build Number: {{ job && job.LastBuild && job.LastBuild.number }}</p>
           <p>Duration: {{ job && job.LastBuild && job.LastBuild.duration }} seconds</p>
           <p>Status: <span :class="job.Status">{{ job && job.LastBuild && job.LastBuild.status }}</span></p>
         </section>
-      </main>
+      </div>
+      <LogViewer ref="childRef"/>
     </div>
   </div>
 </template>
 
 <script>
 import apiService from "../services/jobService";
+import LogViewer from "./LogViewer.vue";
 
 export default {
   name: "JobDetails",
+  components: {
+    LogViewer,
+  },
   data() {
     return {
       job: {
@@ -64,10 +69,8 @@ export default {
             console.error(error);
         }
     },
-
     handleStatusChange(event) {
-      this.job.Status = event.Status;
-      this.job.Message = event.Message;
+      this.$refs.childRef.handleStatusChange(event);
     },
   },
 };
@@ -164,6 +167,6 @@ export default {
 /* Main Panel */
 .main-panel {
   flex: 1;
-  padding: 20px;
+  padding: 50px;
 }
 </style>

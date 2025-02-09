@@ -77,12 +77,29 @@ func (o *QuotedString) Capture(values []string) error {
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
 	logger := workflow.GetLogger(ctx)
 
+	if err := setQueryHandler(ctx); err != nil {
+		return nil, err
+	}
+
+	variables := make(map[string]string)
+	results := make(map[string]any)
+	for _, stage := range pipeline.Stages {
+		if err := stage.execute(ctx, variables, results); err != nil {
+			return nil, err
+		}
+	}
+
+	logger.Info("Groovy Workflow completed.")
+	return results, nil
+}
+
+func setQueryHandler(ctx workflow.Context) error {
 	var streamLines []string = []string{}
 	var streamError error = nil
 	var lock sync.RWMutex
 	// Register Query Handler to get logs
 	err := workflow.SetQueryHandler(ctx, "getLogs", func() (string, error) {
-		if streamError != nil {
+		if streamError != nil && len(streamLines) == 0 {
 			return "", streamError
 		}
 		line := ""
@@ -95,7 +112,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any,
 		return "", nil
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
@@ -114,17 +131,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any,
 			// log.Printf("Received next line: %s", logLine)
 		}
 	})
-
-	variables := make(map[string]string)
-	results := make(map[string]any)
-	for _, stage := range pipeline.Stages {
-		if err := stage.execute(ctx, variables, results); err != nil {
-			return nil, err
-		}
-	}
-
-	logger.Info("Groovy Workflow completed.")
-	return results, nil
+	return nil
 }
 
 func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {

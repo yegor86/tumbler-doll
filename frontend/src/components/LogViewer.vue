@@ -14,18 +14,20 @@
         logs: ""
       };
     },
-    mounted() {
-      const eventSource = apiService.streamJobExec(this.$route.fullPath);
-  
-      eventSource.onmessage = (event) => {
-        this.logs += event.data + "\n";
-      };
-  
-      eventSource.onerror = (error) => {
-        console.error("EventSource failed:", error);
-        eventSource.close();
-      };
-    }
+    methods: {
+      handleStatusChange(event) {
+        
+        const eventSource = apiService.streamJobExec(this.$route.fullPath, event.WorkflowID);
+        eventSource.onmessage = (event) => {
+          this.logs += event.data + "\n";
+        };
+    
+        eventSource.onerror = (error) => {
+          console.error("EventSource failed:", error);
+          eventSource.close();
+        };
+      },
+    },
   };
   </script>
   

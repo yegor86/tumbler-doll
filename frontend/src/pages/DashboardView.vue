@@ -2,14 +2,14 @@
 <div class="dashboard">
     <Navbar />
     <div class="main-content">
-    <Sidebar :isFolder="isFolder()"/>
+    <Sidebar :isFolder="isFolder()" @statusChange="handleStatusChange"/>
     <transition name="fade" mode="out-in">
       <component @navigate="handleNavigation"
+        ref="childRef"
         :is="currentComponent"
         :key="componentKey"
       />
     </transition>
-    <!-- <JobList :key="componentKey"/> -->
     </div>
 </div>
 </template>
@@ -49,6 +49,9 @@ export default {
     methods: {
       handleNavigation(destination) {
         this.selectedJob.IsDir = destination;
+      },
+      handleStatusChange(event) {
+        this.$refs.childRef.handleStatusChange(event);
       },
       isFolder() {
         return this.selectedJob.IsDir;
