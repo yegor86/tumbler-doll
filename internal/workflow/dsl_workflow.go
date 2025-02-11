@@ -1,9 +1,12 @@
 package workflow
 
 import (
-	"io"
+	"bufio"
+	"errors"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -74,10 +77,10 @@ func (o *QuotedString) Capture(values []string) error {
 	return nil
 }
 
-func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any, error) {
+func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[string]interface{}) (map[string]any, error) {
 	logger := workflow.GetLogger(ctx)
 
-	if err := setQueryHandler(ctx); err != nil {
+	if err := dumpLogs(ctx, properties); err != nil {
 		return nil, err
 	}
 
@@ -93,43 +96,48 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline) (map[string]any,
 	return results, nil
 }
 
-func setQueryHandler(ctx workflow.Context) error {
-	var streamLines []string = []string{}
-	var streamError error = nil
-	var lock sync.RWMutex
-	// Register Query Handler to get logs
-	err := workflow.SetQueryHandler(ctx, "getLogs", func() (string, error) {
-		if streamError != nil && len(streamLines) == 0 {
-			return "", streamError
-		}
-		line := ""
-		if len(streamLines) > 0 {
-			lock.Lock()
-			line, streamLines = streamLines[0], streamLines[1:]
-			lock.Unlock()
-			return line, nil
-		}
-		return "", nil
-	})
+func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
+	
+	jobPath, ok := props["jobPath"]
+	if !ok {
+		return errors.New("'jobPath' not found inside properties")
+	}
+	jobId, ok := props["jobId"]
+	if !ok {
+		return errors.New("'jobId' not found in workflow context")
+	}
+
+	outPath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath.(string), "builds", jobId.(string))
+	err := os.MkdirAll(outPath, 0740)
 	if err != nil {
 		return err
 	}
 
+	outFile, err := os.Create(filepath.Join(outPath, "log"))
+	if err != nil {
+		return err
+	}
+    w := bufio.NewWriter(outFile)
+	
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
+		
 		for {
-			var logLine string
-			if more := temporalChan.Receive(ctx, &logLine); !more {
-				streamError = io.EOF
+			var logChunk string
+			if more := temporalChan.Receive(ctx, &logChunk); !more {
 				break
 			}
-			lock.Lock()
-			streamLines = append(streamLines, logLine)
-			lock.Unlock()
-
-			// workflow.GetLogger(ctx).Info("Received log: " + logLine)
-			// log.Printf("Received next line: %s", logLine)
+			// write a chunk
+			if _, err := w.Write([]byte(logChunk)); err != nil {
+				log.Printf("error when writing log %v. Failed chunk: %s", err, logChunk)
+			}
+			if err = w.Flush(); err != nil {
+				log.Printf("error when flushing log %v. Failed chunk: %s", err, logChunk)
+			}
 		}
+		if err := outFile.Close(); err != nil {
+            panic(err)
+        }
 	})
 	return nil
 }

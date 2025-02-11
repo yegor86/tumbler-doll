@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,9 +19,9 @@ var (
 )
 
 type SubmitJobResponse struct {
-	Status string
+	Status     string
 	WorkflowID string
-	RunId string
+	RunId      string
 }
 
 // Handler function for POST /submit/{jobpath}
@@ -47,12 +48,16 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			return
 		}
 
-		context := r.Context()
+		jobId := uuid.New().String()
 		workflowOptions := temporal.StartWorkflowOptions{
-			ID:        job.Name + "/" + uuid.New().String(),
+			ID:        job.Name + "/" + jobId,
 			TaskQueue: "JobQueue",
 		}
-		we, err := wfClient.ExecuteWorkflow(context, workflowOptions, workflow.GroovyDSLWorkflow, *pipeline)
+		props := map[string]interface{}{
+			"jobPath": jobPath,
+			"jobId":   jobId,
+		}
+		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline, props)
 
 		w.Header().Set("Content-Type", "application/json")
 		if err != nil {
@@ -61,10 +66,10 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 			return
 		}
 
-		if err := json.NewEncoder(w).Encode(SubmitJobResponse {
-			Status: "Started workflow: WorkflowID=%s, RunID=%s",
+		if err := json.NewEncoder(w).Encode(SubmitJobResponse{
+			Status:     "Started workflow: WorkflowID=%s, RunID=%s",
 			WorkflowID: we.GetID(),
-			RunId: we.GetRunID(),
+			RunId:      we.GetRunID(),
 		}); err != nil {
 			http.Error(w, "Failed to encode jobs as JSON", http.StatusInternalServerError)
 		}
