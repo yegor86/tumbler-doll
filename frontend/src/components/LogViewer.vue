@@ -1,12 +1,12 @@
 <template>
-    <div class="console" v-html="html">
+    <div class="console">
       <h2>Live Logs</h2>
       <pre>{{ logs }}</pre>
     </div>
   </template>
   
   <script>
-  import AnsiUp from 'ansi_up'
+  import { AnsiUp } from 'ansi_up'
   import apiService from "../services/jobService";
 
   export default {
@@ -40,7 +40,7 @@
   };
   </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .console {
   font-family: monospace;
   text-align: left;
