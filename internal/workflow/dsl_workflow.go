@@ -13,6 +13,16 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
+type State int64
+
+const (
+	Undefined State = -1
+	Pending   State = 0
+	Started   State = 1
+	Running   State = 2
+	Done      State = 3
+)
+
 type (
 	// Pipeline represents the main Jenkins pipeline structure
 	Pipeline struct {
@@ -97,7 +107,8 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 }
 
 func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
-	
+	logger := workflow.GetLogger(ctx)
+
 	jobPath, ok := props["jobPath"]
 	if !ok {
 		return errors.New("'jobPath' not found inside properties")
@@ -106,9 +117,18 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 	if !ok {
 		return errors.New("'jobId' not found in workflow context")
 	}
+	queryResult := Started
+	// setup query handler for query type "state"
+	err := workflow.SetQueryHandler(ctx, "state", func(input []byte) (State, error) {
+		return queryResult, nil
+	})
+	if err != nil {
+		logger.Info("SetQueryHandler failed: " + err.Error())
+		return err
+	}
 
 	outPath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath.(string), "builds", jobId.(string))
-	err := os.MkdirAll(outPath, 0740)
+	err = os.MkdirAll(outPath, 0740)
 	if err != nil {
 		return err
 	}
@@ -117,28 +137,31 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-    w := bufio.NewWriter(outFile)
-	
+	w := bufio.NewWriter(outFile)
+
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
-		
+
 		for {
 			var logChunk string
 			if more := temporalChan.Receive(ctx, &logChunk); !more {
 				break
 			}
 			// write a chunk
-			if _, err := w.Write([]byte(logChunk)); err != nil {
+			if _, err := w.Write([]byte(logChunk + "\n")); err != nil {
 				log.Printf("error when writing log %v. Failed chunk: %s", err, logChunk)
 			}
 			if err = w.Flush(); err != nil {
 				log.Printf("error when flushing log %v. Failed chunk: %s", err, logChunk)
+			} else {
+				queryResult = Running
 			}
 		}
 		if err := outFile.Close(); err != nil {
-            panic(err)
-        }
+			panic(err)
+		}
 	})
+	queryResult = Done
 	return nil
 }
 
