@@ -2,12 +2,14 @@ package workflow
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
+	temporalClient "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
@@ -34,9 +36,18 @@ var (
 
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[string]interface{}) (map[string]any, error) {
 	currentState = Started
-	logger := workflow.GetLogger(ctx)
 
-	if err := dumpLogs(ctx, properties); err != nil {
+	logger := workflow.GetLogger(ctx)
+	// setup query handler for query type "state"
+	err := workflow.SetQueryHandler(ctx, "state", func(input []byte) (State, error) {
+		return currentState, nil
+	})
+	if err != nil {
+		logger.Info("SetQueryHandler failed: " + err.Error())
+		return nil, err
+	}
+
+	if err := writeLogs(ctx, properties); err != nil {
 		return nil, err
 	}
 
@@ -55,9 +66,18 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 	return results, nil
 }
 
-func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
-	logger := workflow.GetLogger(ctx)
+func GetState(wfClient temporalClient.Client, workflowId string) (State, error) {
+	msgEncoded, err := wfClient.QueryWorkflow(context.Background(), workflowId, "", "state")
+	if err != nil {
+		return Undefined, err
+	}
+	
+	var queryResult State
+	msgEncoded.Get(&queryResult)
+	return queryResult, nil
+}
 
+func writeLogs(ctx workflow.Context, props map[string]interface{}) error {
 	jobPath, ok := props["jobPath"]
 	if !ok {
 		return errors.New("'jobPath' not found inside properties")
@@ -66,22 +86,14 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 	if !ok {
 		return errors.New("'jobId' not found in workflow context")
 	}
-	// setup query handler for query type "state"
-	err := workflow.SetQueryHandler(ctx, "state", func(input []byte) (State, error) {
-		return currentState, nil
-	})
-	if err != nil {
-		logger.Info("SetQueryHandler failed: " + err.Error())
-		return err
-	}
-
-	outPath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath.(string), "builds", jobId.(string))
-	err = os.MkdirAll(outPath, 0740)
+	
+	outFilepath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath.(string), "builds", jobId.(string))
+	err := os.MkdirAll(outFilepath, 0740)
 	if err != nil {
 		return err
 	}
 
-	outFile, err := os.Create(filepath.Join(outPath, "log"))
+	outFile, err := os.Create(filepath.Join(outFilepath, "log"))
 	if err != nil {
 		return err
 	}
@@ -89,12 +101,9 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
-		for {
+		for currentState != Done {
 			var logChunk string
 			if more := temporalChan.Receive(ctx, &logChunk); !more {
-				break
-			}
-			if currentState == Done {
 				break
 			}
 			// write a chunk

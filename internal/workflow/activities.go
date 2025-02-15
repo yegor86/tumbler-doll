@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -40,8 +41,10 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 			params["containerId"] = dockerContainer.ContainerId
 		}
 		
-		pluginName := pluginManager.GetPluginName(command)
-		methodFunc := pluginManager.GetFunctionByMethod(command)
+		pluginName, methodFunc, ok := pluginManager.GetPluginInfo(command)
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("plugin is not registered for the command %s", command))
+		}
 		
 		capitalizedCommand := strings.ToUpper(methodFunc[:1]) + strings.ToLower(methodFunc[1:])
 		output, err := pluginManager.Execute(

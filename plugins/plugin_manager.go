@@ -86,18 +86,12 @@ func (pm *PluginManager) UnregisterAll() error {
 	return err
 }
 
-func (pm *PluginManager) GetPluginName(methodName string) string {
+// GetPluginInfo returns (pluginName, functionName)
+func (pm *PluginManager) GetPluginInfo(methodName string) (string, string, bool) {
 	if info, ok := pm.methodToInfo[methodName]; ok {
-		return info.pluginName
+		return info.pluginName, info.funcName, true
 	}
-	return ""
-}
-
-func (pm *PluginManager) GetFunctionByMethod(methodName string) string {
-	if info, ok := pm.methodToInfo[methodName]; ok {
-		return info.funcName
-	}
-	return ""
+	return "", "", false
 }
 
 func (pm *PluginManager) Execute(pluginName string, methodName string, args map[string]interface{}) (interface{}, error) {

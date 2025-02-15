@@ -2,7 +2,6 @@ package handler
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -24,7 +23,6 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 
 		// Set headers for SSE
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
@@ -32,27 +30,46 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 		jobPath := chi.URLParam(r, "*")
 		workflowId := r.URL.Query().Get("workflowId")
 		jobId := workflowId[strings.LastIndex(workflowId, "/")+1:]
+		state := workflow.Undefined
 
-		inPath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath, "builds", jobId, "log")
+		inFilepath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath, "builds", jobId, "log")
 		err := os.ErrNotExist
-		for err != nil {
-			_, err = os.Stat(inPath)
+		for err != nil && state != workflow.Done {
+			_, err = os.Stat(inFilepath)
 			if err != nil && !errors.Is(err, os.ErrNotExist) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			time.Sleep(100 * time.Millisecond)
 		}
 
+		inFile, err := os.Open(inFilepath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer inFile.Close()
+
+		// Remember inFile read-offset to use it in case of inFile was not fully read at the first traversal
 		var seekOffset int64 = 0
-		for {
-			seekOffset, err = openAndRead(w, inPath, seekOffset)
-			state, err2 := getState(wfClient, workflowId)
-			if err != nil || err2 != nil {
-				http.Error(w, errors.Join(err, err2).Error(), http.StatusInternalServerError)
+
+		for state != workflow.Done {
+			_, err = inFile.Seek(seekOffset, io.SeekStart)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			if state == workflow.Done {
-				break
+
+			seekOffset, err = streamAsEvents(w, inFile)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			
+			state, err = workflow.GetState(wfClient, workflowId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
@@ -61,22 +78,10 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 	}
 }
 
-func openAndRead(w http.ResponseWriter, inPath string, seekOffset int64) (int64, error) {
+func streamAsEvents(w http.ResponseWriter, inFile *os.File) (int64, error) {
 	wFlusher, ok := w.(http.Flusher)
 	if !ok {
-		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
 		return -1, errors.New("streaming not supported")
-	}
-	// make a read buffer
-	inFile, err := os.Open(inPath)
-	if err != nil {
-		return -1, err
-	}
-	defer inFile.Close()
-
-	_, err = inFile.Seek(seekOffset, io.SeekStart)
-	if err != nil {
-		return -1, err
 	}
 
 	scanner := bufio.NewScanner(inFile)
@@ -95,15 +100,4 @@ func openAndRead(w http.ResponseWriter, inPath string, seekOffset int64) (int64,
 		return -1, scanner.Err()
 	}
 	return inFile.Seek(0, io.SeekCurrent)
-}
-
-func getState(wfClient temporal.Client, workflowId string) (workflow.State, error) {
-
-	var queryResult workflow.State
-	msgEncoded, err := wfClient.QueryWorkflow(context.Background(), workflowId, "", "state")
-	if err != nil {
-		return workflow.Undefined, err
-	}
-	msgEncoded.Get(&queryResult)
-	return queryResult, nil
 }
