@@ -6,14 +6,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
-
-type State int64
 
 const (
 	Undefined State = -1
@@ -24,70 +21,19 @@ const (
 )
 
 type (
-	// Pipeline represents the main Jenkins pipeline structure
-	Pipeline struct {
-		Agent  *Agent   `"pipeline" "{" "agent" @@`
-		Stages []*Stage `"stages" "{" @@+ "}"`
-		Close  string   `"}"`
-	}
-
-	// Agent represents the agent block in a Jenkinsfile
-	Agent struct {
-		None   bool    `( "none" )?`
-		Docker *Docker `( "{" "docker" @@ "}" )?`
-	}
-
-	Docker struct {
-		Image QuotedString `@String`
-	}
-
-	Parallel []*Stage
-
-	// Stage represents a stage block within stages
-	Stage struct {
-		Name     QuotedString `"stage" "(" @String ")" "{"`
-		Agent    *Agent       `( "agent" @@ )?`
-		Steps    []*Step      `( "steps" "{" @@+ "}" )?`
-		FailFast *bool        `( "failFast" @Bool )?`
-		Parallel Parallel     `( "parallel" "{" @@+ "}" )?`
-		Close    string       `"}"`
-	}
-
-	// Step represents individual steps within a stage
-	Step struct {
-		SingleKV *SingleKVCommand `@@ |`
-		MultiKV  *MultiKVCommand  `@@`
-	}
-
-	SingleKVCommand struct {
-		Command string       `@Ident`
-		Value   QuotedString `@String`
-	}
-
-	MultiKVCommand struct {
-		Command string  `@Ident`
-		Params  []Param `@@ ("," @@)*`
-	}
-
-	Param struct {
-		Key   string       `@Ident ":"`
-		Value QuotedString `@String`
-	}
-
+	State int64
+	
 	executable interface {
 		execute(ctx workflow.Context, variables map[string]string, results map[string]any) error
 	}
 )
 
-type QuotedString string
-
-// Capture method strips quotes from the Image field
-func (o *QuotedString) Capture(values []string) error {
-	*o = QuotedString(strings.Trim(values[0], `"'`))
-	return nil
-}
+var (
+	currentState State = Undefined
+)
 
 func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[string]interface{}) (map[string]any, error) {
+	currentState = Started
 	logger := workflow.GetLogger(ctx)
 
 	if err := dumpLogs(ctx, properties); err != nil {
@@ -96,6 +42,8 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 
 	variables := make(map[string]string)
 	results := make(map[string]any)
+	
+	currentState = Running
 	for _, stage := range pipeline.Stages {
 		if err := stage.execute(ctx, variables, results); err != nil {
 			return nil, err
@@ -103,6 +51,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 	}
 
 	logger.Info("Groovy Workflow completed.")
+	currentState = Done
 	return results, nil
 }
 
@@ -117,10 +66,9 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 	if !ok {
 		return errors.New("'jobId' not found in workflow context")
 	}
-	queryResult := Started
 	// setup query handler for query type "state"
 	err := workflow.SetQueryHandler(ctx, "state", func(input []byte) (State, error) {
-		return queryResult, nil
+		return currentState, nil
 	})
 	if err != nil {
 		logger.Info("SetQueryHandler failed: " + err.Error())
@@ -141,10 +89,12 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
-
 		for {
 			var logChunk string
 			if more := temporalChan.Receive(ctx, &logChunk); !more {
+				break
+			}
+			if currentState == Done {
 				break
 			}
 			// write a chunk
@@ -153,15 +103,10 @@ func dumpLogs(ctx workflow.Context, props map[string]interface{}) error {
 			}
 			if err = w.Flush(); err != nil {
 				log.Printf("error when flushing log %v. Failed chunk: %s", err, logChunk)
-			} else {
-				queryResult = Running
 			}
 		}
-		if err := outFile.Close(); err != nil {
-			panic(err)
-		}
+		outFile.Close();
 	})
-	queryResult = Done
 	return nil
 }
 

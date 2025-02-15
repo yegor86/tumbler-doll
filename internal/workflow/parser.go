@@ -2,6 +2,7 @@ package workflow
 
 import (
 	"log"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -23,6 +24,66 @@ var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
 	{Name: "Colon", Pattern: `:`},
 	{Name: "Comma", Pattern: `,`},
 })
+
+type (
+	// Pipeline represents the main Jenkins pipeline structure
+	Pipeline struct {
+		Agent  *Agent   `"pipeline" "{" "agent" @@`
+		Stages []*Stage `"stages" "{" @@+ "}"`
+		Close  string   `"}"`
+	}
+
+	// Agent represents the agent block in a Jenkinsfile
+	Agent struct {
+		None   bool    `( "none" )?`
+		Docker *Docker `( "{" "docker" @@ "}" )?`
+	}
+
+	Docker struct {
+		Image QuotedString `@String`
+	}
+
+	Parallel []*Stage
+
+	// Stage represents a stage block within stages
+	Stage struct {
+		Name     QuotedString `"stage" "(" @String ")" "{"`
+		Agent    *Agent       `( "agent" @@ )?`
+		Steps    []*Step      `( "steps" "{" @@+ "}" )?`
+		FailFast *bool        `( "failFast" @Bool )?`
+		Parallel Parallel     `( "parallel" "{" @@+ "}" )?`
+		Close    string       `"}"`
+	}
+
+	// Step represents individual steps within a stage
+	Step struct {
+		SingleKV *SingleKVCommand `@@ |`
+		MultiKV  *MultiKVCommand  `@@`
+	}
+
+	SingleKVCommand struct {
+		Command string       `@Ident`
+		Value   QuotedString `@String`
+	}
+
+	MultiKVCommand struct {
+		Command string  `@Ident`
+		Params  []Param `@@ ("," @@)*`
+	}
+
+	Param struct {
+		Key   string       `@Ident ":"`
+		Value QuotedString `@String`
+	}
+)
+
+type QuotedString string
+
+// Capture method strips quotes from the Image field
+func (o *QuotedString) Capture(values []string) error {
+	*o = QuotedString(strings.Trim(values[0], `"'`))
+	return nil
+}
 
 func (*DslParser) Parse(dslFile string) (*Pipeline, error) {
 	parser := participle.MustBuild[Pipeline](
