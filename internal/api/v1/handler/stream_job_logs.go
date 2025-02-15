@@ -85,7 +85,6 @@ func streamAsEvents(w http.ResponseWriter, inFile *os.File) (int64, error) {
 	}
 
 	scanner := bufio.NewScanner(inFile)
-
 	for scanner.Scan() {
 		formatedMsg := fmt.Sprintf("data: %s\n\n", scanner.Text())
 		_, err := fmt.Fprint(w, formatedMsg)

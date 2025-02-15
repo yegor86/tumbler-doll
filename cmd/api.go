@@ -27,7 +27,10 @@ var (
 		Run: func(cmd *cli.Command, args []string) {
 			var err error
 
-			wfClient := cmd.Context().Value("wfClient").(temporal.Client);
+			wfClient, ok := cmd.Context().Value("wfClient").(temporal.Client)
+			if !ok {
+				log.Fatalf("Failed to obtain temporal client")
+			}
 
 			// Create the router and server config
 			router, err := newRouter()

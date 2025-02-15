@@ -47,7 +47,7 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 		return nil, err
 	}
 
-	if err := writeLogs(ctx, properties); err != nil {
+	if err := setupLogsStream(ctx, properties); err != nil {
 		return nil, err
 	}
 
@@ -77,7 +77,7 @@ func GetState(wfClient temporalClient.Client, workflowId string) (State, error) 
 	return queryResult, nil
 }
 
-func writeLogs(ctx workflow.Context, props map[string]interface{}) error {
+func setupLogsStream(ctx workflow.Context, props map[string]interface{}) error {
 	jobPath, ok := props["jobPath"]
 	if !ok {
 		return errors.New("'jobPath' not found inside properties")
