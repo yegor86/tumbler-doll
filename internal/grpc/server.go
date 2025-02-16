@@ -13,7 +13,7 @@ import (
 type GrpcServer struct {
 	server *grpc.Server
 	pb.UnimplementedLogStreamingServiceServer
-	onReceived func(msg string)
+	onReceived func(workflowId string, msg string)
 }
 
 func NewServer() *GrpcServer {
@@ -39,7 +39,7 @@ func (s *GrpcServer) Stream(stream grpc.ClientStreamingServer[pb.LogRequest, pb.
 			return err
 		}
 		if s.onReceived != nil {
-			s.onReceived(msg.Message)
+			s.onReceived(msg.WorkflowId, msg.Message)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -47,7 +47,8 @@ func (s *GrpcServer) Stream(stream grpc.ClientStreamingServer[pb.LogRequest, pb.
 	return nil
 }
 
-func (s *GrpcServer) ListenAndServe() error {
+func (s *GrpcServer) ListenAndServe(onReceived func(workflowId string, msg string)) error {
+	s.onReceived = onReceived
 	return s.ListenAndServeWithHostPort(":50051")
 }
 

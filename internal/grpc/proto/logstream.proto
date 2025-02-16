@@ -13,6 +13,7 @@ service LogStreamingService {
 // Request message to start Log streaming
 message LogRequest {
   string message = 1;
+  string workflowId = 2;
 }
 
 // Response message containing Log Stream output chunks

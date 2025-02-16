@@ -9,7 +9,6 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
-	"github.com/yegor86/tumbler-doll/internal/grpc"
 )
 
 func init() {
@@ -19,8 +18,8 @@ func init() {
 var (
 	workflowCmd = &cli.Command{
 		Use:   "wf",
-		Short: "Start Workflow",
-		Long:  `Start Workflow`,
+		Short: "Run Worker",
+		Long:  "Run Worker",
 		Run: func(cmd *cli.Command, args []string) {
 			wfClient, ok := cmd.Context().Value("wfClient").(temporal.Client)
 			if !ok {
@@ -32,14 +31,7 @@ var (
 			w.RegisterWorkflow(workflow.GroovyDSLWorkflow)
 			w.RegisterActivity(&workflow.StageActivities{})
 
-			// Load the GRPC server
-			grpcServer := grpc.NewServer()
-			go func() {
-				if err := grpcServer.ListenAndServe(); err != nil {
-					log.Fatalf("GRPC server error: %v", err)
-				}
-			}()
-
+			// Start the worker
 			err := w.Run(worker.InterruptCh())
 			if err != nil {
 				log.Fatalf("Unable to start worker: %v", err)

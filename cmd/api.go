@@ -13,6 +13,7 @@ import (
 	temporal "go.temporal.io/sdk/client"
 
 	"github.com/yegor86/tumbler-doll/internal/api/v1/handler"
+	"github.com/yegor86/tumbler-doll/internal/grpc"
 )
 
 func init() {
@@ -31,6 +32,16 @@ var (
 			if !ok {
 				log.Fatalf("Failed to obtain temporal client")
 			}
+
+			// Load the GRPC server
+			grpcServer := grpc.NewServer()
+			go func() {
+				if err := grpcServer.ListenAndServe(func(workflowId, msg string) {
+
+				}); err != nil {
+					log.Fatalf("GRPC server error: %v", err)
+				}
+			}()
 
 			// Create the router and server config
 			router, err := newRouter()
