@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	temporal "go.temporal.io/sdk/client"
 
+	"github.com/yegor86/tumbler-doll/internal/api/sse"
 	"github.com/yegor86/tumbler-doll/internal/workflow"
 )
 
@@ -60,7 +59,13 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 				return
 			}
 
-			seekOffset, err = streamAsEvents(w, inFile)
+			err = sse.CopyAndFlush(w, inFile)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			seekOffset, err = inFile.Seek(0, io.SeekCurrent)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -76,27 +81,4 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 
 		fmt.Fprintf(w, "Completed job: WorkflowID=%s", jobId)
 	}
-}
-
-func streamAsEvents(w http.ResponseWriter, inFile *os.File) (int64, error) {
-	wFlusher, ok := w.(http.Flusher)
-	if !ok {
-		return -1, errors.New("streaming not supported")
-	}
-
-	scanner := bufio.NewScanner(inFile)
-	for scanner.Scan() {
-		formatedMsg := fmt.Sprintf("data: %s\n\n", scanner.Text())
-		_, err := fmt.Fprint(w, formatedMsg)
-		if err != nil {
-			log.Println("Error writing to response:", err)
-			break
-		}
-		wFlusher.Flush()
-		time.Sleep(100 * time.Millisecond)
-	}
-	if scanner.Err() != nil {
-		return -1, scanner.Err()
-	}
-	return inFile.Seek(0, io.SeekCurrent)
 }

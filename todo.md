@@ -9,3 +9,5 @@
 8. Execute plugins inside docker container
 10. Support nested script block
 11. Stream Docker output into plugin stdout
+12. Name workflows 1,2,3,...
+13. write step name before printing logs

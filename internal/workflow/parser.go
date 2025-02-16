@@ -9,23 +9,9 @@ import (
 )
 
 type (
+
 	DslParser struct{}
-)
 
-// Define the lexer rules for Jenkinsfile syntax
-var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
-	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|stages|stage|steps|none|failFast)\b`},
-	{Name: "String", Pattern: `'([^']*)'|"([^"]*)"`},
-	{Name: "Bool", Pattern: `true|false`},
-	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
-	{Name: "Punctuation", Pattern: `[{}()]`},
-	{Name: "whitespace", Pattern: `\s+`},
-	{Name: "comment", Pattern: `\/\/[^\n]*`},
-	{Name: "Colon", Pattern: `:`},
-	{Name: "Comma", Pattern: `,`},
-})
-
-type (
 	// Pipeline represents the main Jenkins pipeline structure
 	Pipeline struct {
 		Agent  *Agent   `"pipeline" "{" "agent" @@`
@@ -79,6 +65,19 @@ type (
 
 type QuotedString string
 
+// Define the lexer rules for Jenkinsfile syntax
+var lexerRules = lexer.MustSimple([]lexer.SimpleRule{
+	{Name: "Keyword", Pattern: `\b(pipeline|agent|docker|stages|stage|steps|none|failFast)\b`},
+	{Name: "String", Pattern: `'([^']*)'|"([^"]*)"`},
+	{Name: "Bool", Pattern: `true|false`},
+	{Name: "Ident", Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+	{Name: "Punctuation", Pattern: `[{}()]`},
+	{Name: "whitespace", Pattern: `\s+`},
+	{Name: "comment", Pattern: `\/\/[^\n]*`},
+	{Name: "Colon", Pattern: `:`},
+	{Name: "Comma", Pattern: `,`},
+})
+
 // Capture method strips quotes from the Image field
 func (o *QuotedString) Capture(values []string) error {
 	*o = QuotedString(strings.Trim(values[0], `"'`))
@@ -97,3 +96,4 @@ func (*DslParser) Parse(dslFile string) (*Pipeline, error) {
 	}
 	return pipeline, nil
 }
+
