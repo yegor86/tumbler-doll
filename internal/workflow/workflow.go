@@ -101,6 +101,7 @@ func setupLogsStream(ctx workflow.Context, props map[string]interface{}) error {
 
 	temporalChan := workflow.GetSignalChannel(ctx, "logs")
 	workflow.Go(ctx, func(ctx workflow.Context) {
+		
 		for currentState != Done {
 			var logChunk string
 			if more := temporalChan.Receive(ctx, &logChunk); !more {
