@@ -9,6 +9,7 @@ import (
 	cli "github.com/spf13/cobra"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
+	"github.com/yegor86/tumbler-doll/internal/grpc"
 )
 
 func init() {

@@ -59,9 +59,10 @@ func (s *GrpcServer) ListenAndServeWithHostPort(hostPort string) error {
 		return err
 	}
 
-	log.Printf("gRPC server is running on host port %s...", hostPort)
+	log.Printf("gRPC server is running on host port %s...\n", hostPort)
 	if err := s.server.Serve(listener); err != nil {
 		return err
 	}
+	log.Print("gRPC server is stopping...\n")
 	return nil
 }

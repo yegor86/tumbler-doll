@@ -1,10 +1,15 @@
 package cmd
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -33,15 +38,7 @@ var (
 				log.Fatalf("Failed to obtain temporal client")
 			}
 
-			// Load the GRPC server
-			grpcServer := grpc.NewServer()
-			go func() {
-				if err := grpcServer.ListenAndServe(func(workflowId, msg string) {
-
-				}); err != nil {
-					log.Fatalf("GRPC server error: %v", err)
-				}
-			}()
+			newGrpcServer()
 
 			// Create the router and server config
 			router, err := newRouter()
@@ -71,6 +68,43 @@ var (
 		},
 	}
 )
+
+// newGrpcServer: Load a GRPC server
+func newGrpcServer() {
+	grpcServer := grpc.NewServer()
+	go func() {
+		if err := grpcServer.ListenAndServe(func(workflowId string, chunk string) {
+			
+			delim := strings.LastIndex(workflowId, "/")
+			jobPath, jobId := workflowId[:delim], workflowId[delim + 1:]
+			opath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath, "builds", jobId)
+			err := os.MkdirAll(opath, 0740)
+			if err != nil {
+				log.Printf("error creating dir %s: %v", opath, err)
+				return
+			}
+
+			ofile, err := os.OpenFile(filepath.Join(opath, "log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Printf("error creating/opening file %s: %v", filepath.Join(opath, "log"), err)
+				return
+			}
+
+			w := bufio.NewWriter(ofile)
+
+			// write a chunk
+			if _, err := w.Write([]byte(chunk + "\n")); err != nil {
+				log.Printf("error when writing log %v. Failed chunk: %s", err, chunk)
+			}
+			if err = w.Flush(); err != nil {
+				log.Printf("error when flushing log %v. Failed chunk: %s", err, chunk)
+			}
+
+		}); err != nil {
+			log.Fatalf("GRPC server error: %v", err)
+		}
+	}()
+}
 
 func newRouter() (chi.Router, error) {
 
