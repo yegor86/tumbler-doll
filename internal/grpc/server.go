@@ -18,11 +18,13 @@ type GrpcServer struct {
 
 func NewServer() *GrpcServer {
 	grpcServer := grpc.NewServer()
-	pb.RegisterLogStreamingServiceServer(grpcServer, &GrpcServer{})
 
-	return &GrpcServer{
+	server := &GrpcServer{
 		server: grpcServer,
 	}
+	pb.RegisterLogStreamingServiceServer(grpcServer, server)
+
+	return server
 }
 
 func (s *GrpcServer) Stream(stream grpc.ClientStreamingServer[pb.LogRequest, pb.LogResponse]) error {

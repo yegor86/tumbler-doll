@@ -15,8 +15,6 @@ type StageActivities struct {
 }
 
 func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agent Agent) ([]string, error) {
-	// name := activity.GetInfo(ctx).ActivityType.Name
-	// fmt.Printf("Run %s...\n", name)
 	var results []string
 	var dockerContainer *DockerContainer = nil
 	var err error

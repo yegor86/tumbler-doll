@@ -5,31 +5,31 @@ import (
 
 	pb "github.com/yegor86/tumbler-doll/internal/grpc/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type GrpcClient struct {
 	conn   *grpc.ClientConn
-	client pb.LogStreamingServiceClient
 	stream grpc.ClientStreamingClient[pb.LogRequest, pb.LogResponse]
 }
 
 // hostPort: localhost:50051
-func (c *GrpcClient) Connect(hostPort string) error {
-	conn, err := grpc.NewClient(hostPort, grpc.EmptyDialOption{})
+func NewClient(hostPort string) (*GrpcClient, error) {
+	conn, err := grpc.NewClient(hostPort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	stream, err := c.client.Stream(context.Background(), grpc.EmptyCallOption{})
+	client := pb.NewLogStreamingServiceClient(conn)
+	stream, err := client.Stream(context.Background(), grpc.EmptyCallOption{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	c.conn = conn
-	c.client = pb.NewLogStreamingServiceClient(conn)
-	c.stream = stream
-
-	return nil
+	return &GrpcClient {
+		conn: conn,
+		stream: stream,
+	}, nil
 }
 
 func (c *GrpcClient) CloseStream() (*pb.LogResponse, error) {
@@ -40,16 +40,9 @@ func (c *GrpcClient) Close() error {
 	return c.conn.Close()
 }
 
-func (c *GrpcClient) Send(msg string) error {
-	err := c.stream.Send(&pb.LogRequest{
+func (c *GrpcClient) Send(workflowId string, msg string) error {
+	return c.stream.Send(&pb.LogRequest{
+		WorkflowId: workflowId,
 		Message: msg,
 	})
-
-	if err != nil {
-		return err
-	}
-
-	
-
-	return err
 }

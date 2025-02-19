@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -57,7 +56,6 @@ func SubmitJob(wfClient temporal.Client) http.HandlerFunc {
 		props := map[string]interface{}{
 			"jobPath": jobPath,
 			"jobId":   jobId,
-			"ipAddress": os.Getenv("IP_ADDRESS"),
 		}
 		we, err := wfClient.ExecuteWorkflow(context.Background(), workflowOptions, workflow.GroovyDSLWorkflow, *pipeline, props)
 

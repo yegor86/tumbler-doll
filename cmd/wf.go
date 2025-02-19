@@ -2,14 +2,20 @@ package cmd
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	temporal "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
+	"golang.org/x/net/context"
 
 	cli "github.com/spf13/cobra"
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
-	"github.com/yegor86/tumbler-doll/internal/grpc"
+	"github.com/yegor86/tumbler-doll/plugins"
+	"github.com/yegor86/tumbler-doll/plugins/scm"
+	"github.com/yegor86/tumbler-doll/plugins/shell"
 )
 
 func init() {
@@ -18,7 +24,7 @@ func init() {
 
 var (
 	workflowCmd = &cli.Command{
-		Use:   "wf",
+		Use:   "worker",
 		Short: "Run Worker",
 		Long:  "Run Worker",
 		Run: func(cmd *cli.Command, args []string) {
@@ -26,6 +32,25 @@ var (
 			if !ok {
 				log.Fatalf("Failed to obtain temporal client")
 			}
+			pluginManager := plugins.GetInstance()
+			defer pluginManager.UnregisterAll()
+
+			plugins := map[string]plugins.Plugin{
+				"scm":   &scm.ScmPlugin{},
+				"shell": &shell.ShellPlugin{},
+			}
+			
+			ctx := context.WithValue(context.Background(), "wfClient", wfClient)
+			ctx = context.WithValue(ctx, "temporalHostport", os.Getenv("TEMPORAL_HOSTPORT"))
+			
+			for name, plugin := range plugins {
+				err := pluginManager.Register(ctx, name, plugin)
+				if err != nil {
+					log.Printf("Failed to register plugin %s: %v", name, err)
+				}
+			}
+			exitOnSyscall(pluginManager)
+			
 
 			w := worker.New(wfClient, "JobQueue", worker.Options{})
 
@@ -40,3 +65,16 @@ var (
 		},
 	}
 )
+
+func exitOnSyscall(pluginManager *plugins.PluginManager) {
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-signals
+		log.Printf("Shutting down...")
+
+		pluginManager.UnregisterAll()
+
+		os.Exit(0)
+	}()
+}

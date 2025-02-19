@@ -1,12 +1,9 @@
 package workflow
 
 import (
-	"bufio"
 	"context"
-	"errors"
-	"log"
+	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	temporalClient "go.temporal.io/sdk/client"
@@ -47,12 +44,10 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 		return nil, err
 	}
 
-	if err := setupLogsStream(ctx, properties); err != nil {
-		return nil, err
-	}
-
 	variables := make(map[string]string)
 	results := make(map[string]any)
+
+	fmt.Printf("Temporal address: %s\n", os.Getenv("TEMPORAL_ADDRESS"))
 	
 	currentState = Running
 	for _, stage := range pipeline.Stages {
@@ -75,49 +70,6 @@ func GetState(wfClient temporalClient.Client, workflowId string) (State, error) 
 	var queryResult State
 	msgEncoded.Get(&queryResult)
 	return queryResult, nil
-}
-
-func setupLogsStream(ctx workflow.Context, props map[string]interface{}) error {
-	jobPath, ok := props["jobPath"]
-	if !ok {
-		return errors.New("'jobPath' not found inside properties")
-	}
-	jobId, ok := props["jobId"]
-	if !ok {
-		return errors.New("'jobId' not found in workflow context")
-	}
-	
-	outFilepath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath.(string), "builds", jobId.(string))
-	err := os.MkdirAll(outFilepath, 0740)
-	if err != nil {
-		return err
-	}
-
-	outFile, err := os.Create(filepath.Join(outFilepath, "log"))
-	if err != nil {
-		return err
-	}
-	w := bufio.NewWriter(outFile)
-
-	temporalChan := workflow.GetSignalChannel(ctx, "logs")
-	workflow.Go(ctx, func(ctx workflow.Context) {
-		
-		for currentState != Done {
-			var logChunk string
-			if more := temporalChan.Receive(ctx, &logChunk); !more {
-				break
-			}
-			// write a chunk
-			if _, err := w.Write([]byte(logChunk + "\n")); err != nil {
-				log.Printf("error when writing log %v. Failed chunk: %s", err, logChunk)
-			}
-			if err = w.Flush(); err != nil {
-				log.Printf("error when flushing log %v. Failed chunk: %s", err, logChunk)
-			}
-		}
-		outFile.Close();
-	})
-	return nil
 }
 
 func (stage *Stage) execute(ctx workflow.Context, variables map[string]string, results map[string]any) error {

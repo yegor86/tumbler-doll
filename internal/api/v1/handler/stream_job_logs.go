@@ -70,7 +70,7 @@ func StreamLogs(wfClient temporal.Client) http.HandlerFunc {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			
+
 			state, err = workflow.GetState(wfClient, workflowId)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

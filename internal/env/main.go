@@ -13,7 +13,7 @@ func LoadEnvVars() {
 	if err != nil {
 		log.Fatalf("Error getting home directory: %v", err)
 	}
-	
+
 	appDir := os.Getenv("JENKINS_HOME")
 	if appDir == "" {
 		appDir = homeDir
@@ -27,7 +27,7 @@ func LoadEnvVars() {
 	if err != nil {
 		log.Fatalf("Error getting IP address: %v", err)
 	}
-	os.Setenv("IP_ADDRESS", ipAddress)
+	os.Setenv("TEMPORAL_HOSTPORT", fmt.Sprintf("%s:%s", ipAddress, "50051"))
 
 	printEnv()
 }

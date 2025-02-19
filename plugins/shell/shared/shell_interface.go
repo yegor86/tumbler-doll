@@ -3,17 +3,18 @@ package shared
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
+	stream "github.com/yegor86/tumbler-doll/internal/grpc"
 	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
-	temporal "go.temporal.io/sdk/client"
 )
 
 type ClientShell interface {
-	Echo(ctx context.Context, args map[string]interface{}) error
-	Sh(ctx context.Context, args map[string]interface{}) error
+	Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error
+	Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error
 }
 
 type ServerShell interface {
@@ -26,7 +27,7 @@ type ShellRPCClient struct {
 	broker   *plugin.GRPCBroker
 }
 
-func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) error {
+func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error {
 	// err := g.client.Call("Plugin.Echo", args, reply)
 
 	cmd := "echo " + args["text"].(string)
@@ -47,23 +48,23 @@ func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) 
 		return err
 	}
 
-	wfClient := ctx.Value("wfClient").(temporal.Client)
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
 			return err
 		}
 		if workflowExecutionId != "" {
-			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", "logs", resp.Chunk)
+			err = streamClient.Send(workflowExecutionId, resp.Chunk)
 		}
 		if err != nil {
 			return err
 		}
 		fmt.Println(resp.Chunk)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) error {
+func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error {
 	cmd := args["text"].(string)
 	containerId := ""
 	if _, ok := args["containerId"]; ok {
@@ -82,14 +83,13 @@ func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) er
 		return err
 	}
 
-	wfClient := ctx.Value("wfClient").(temporal.Client)
 	for {
 		resp, err := stream.Recv()
 		if err != nil {
 			return err
 		}
 		if workflowExecutionId != "" {
-			err = wfClient.SignalWorkflow(ctx, workflowExecutionId, "", "logs", resp.Chunk)
+			err = streamClient.Send(workflowExecutionId, resp.Chunk)
 		}
 		if err != nil {
 			return err

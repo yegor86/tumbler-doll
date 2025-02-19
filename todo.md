@@ -11,3 +11,4 @@
 11. Stream Docker output into plugin stdout
 12. Name workflows 1,2,3,...
 13. write step name before printing logs
+14. reconnect grpc client automatically

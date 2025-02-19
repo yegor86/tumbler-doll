@@ -10,11 +10,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
 	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
+	"github.com/yegor86/tumbler-doll/internal/grpc"
 )
 
 type ShellPlugin struct {
 	shell  shared.ClientShell
 	pluginClient *plugin.Client
+	streamClient *grpc.GrpcClient
 	ctx context.Context
 }
 
@@ -35,6 +37,16 @@ func (p *ShellPlugin) Start(ctx context.Context) error {
 		Output: os.Stdout,
 		Level:  hclog.Debug,
 	})
+
+	temporalHostPort, ok := ctx.Value("temporalHostport").(string)
+	if !ok {
+		return fmt.Errorf("failed to extract TEMPORAL_ADDRESS from context: %v", ctx.Value("temporalHostport"))
+	}
+	streamClient, err := grpc.NewClient(temporalHostPort)
+	if err != nil {
+		return err
+	}
+	p.streamClient = streamClient
 
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig: handshakeConfig,
@@ -82,11 +94,11 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
-	err := scmClient.shell.Echo(scmClient.ctx, args)
+	err := scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
 	return err.Error()
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
-	err := scmClient.shell.Sh(scmClient.ctx, args)
+	err := scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
 	return err.Error()
 }

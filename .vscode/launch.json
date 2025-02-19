@@ -13,13 +13,13 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Tumbpler Workflow",
+            "name": "Tumbpler Worker",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "main.go",
             "args": [
-                "wf"
+                "worker"
             ],
             "console": "integratedTerminal"
         },
