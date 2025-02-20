@@ -1,14 +1,15 @@
 package cmd
 
 import (
-	"bufio"
+	"context"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
+	"os/signal"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -37,8 +38,6 @@ var (
 				log.Fatalf("Failed to obtain temporal client")
 			}
 
-			newGrpcServer()
-
 			// Create the router and server config
 			router, err := newRouter()
 			if err != nil {
@@ -52,58 +51,54 @@ var (
 			router.Post("/uploadfile", handler.UploadFile(wfClient))
 			router.HandleFunc("/stream/*", handler.StreamLogs(wfClient))
 
-			// Create a server
-			s := http.Server{
+			var wg sync.WaitGroup
+        	wg.Add(2)
+
+			// Create a HTTP server
+			httpServer := http.Server{
 				Addr:    net.JoinHostPort(config.Server.Host, config.Server.Port),
 				Handler: router,
 			}
+			go func() {
+                defer wg.Done()
+				if err = httpServer.ListenAndServe(); err != nil {
+					log.Fatalf("HTTP server error: %v", err)
+				}
+			}()
 
-			// Start the listener and service connections.
-			if err = s.ListenAndServe(); err != nil {
-				log.Fatalf("Server error: %v", err)
+			// Create GRPC server
+			grpcServer := grpc.NewServer()
+			go func() {
+				defer wg.Done()
+				if err := grpcServer.ListenAndServe(); err != nil {
+					log.Fatalf("GRPC server error: %v", err)
+				}
+			}()
+			
+			fmt.Printf("Servers started on ports %s and %s\n", httpServer.Addr, grpcServer.Addr)
+
+			quit := make(chan os.Signal, 1)
+			signal.Notify(quit, os.Interrupt)
+			<-quit
+
+			fmt.Println("Shutting down servers...")
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := httpServer.Shutdown(ctx); err != nil {
+					log.Fatalf("HTTP server shutdown failed: %v", err)
 			}
 
-			log.Printf("API listening on %s", s.Addr)
+			if err := grpcServer.Shutdown(ctx); err != nil {
+					log.Fatalf("GRPC server shutdown failed: %v", err)
+			}
+
+			wg.Wait() // Wait for server goroutines to exit.
+			fmt.Println("Servers gracefully stopped.")
 		},
 	}
 )
-
-// newGrpcServer: Load a GRPC server
-func newGrpcServer() {
-	grpcServer := grpc.NewServer()
-	go func() {
-		if err := grpcServer.ListenAndServe(func(workflowId string, chunk string) {
-			
-			delim := strings.LastIndex(workflowId, "/")
-			jobPath, jobId := workflowId[:delim], workflowId[delim + 1:]
-			opath := filepath.Join(os.Getenv("JENKINS_HOME"), jobPath, "builds", jobId)
-			err := os.MkdirAll(opath, 0740)
-			if err != nil {
-				log.Printf("error creating dir %s: %v", opath, err)
-				return
-			}
-
-			ofile, err := os.OpenFile(filepath.Join(opath, "log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				log.Printf("error creating/opening file %s: %v", filepath.Join(opath, "log"), err)
-				return
-			}
-
-			w := bufio.NewWriter(ofile)
-
-			// write a chunk
-			if _, err := w.Write([]byte(chunk + "\n")); err != nil {
-				log.Printf("error when writing log %v. Failed chunk: %s", err, chunk)
-			}
-			if err = w.Flush(); err != nil {
-				log.Printf("error when flushing log %v. Failed chunk: %s", err, chunk)
-			}
-
-		}); err != nil {
-			log.Fatalf("GRPC server error: %v", err)
-		}
-	}()
-}
 
 func newRouter() (chi.Router, error) {
 
