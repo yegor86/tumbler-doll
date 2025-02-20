@@ -3,8 +3,11 @@ package shared
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"time"
 
+	"golang.org/x/sync/errgroup"
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
 
@@ -74,8 +77,8 @@ func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}, st
 	if _, ok := args["workflowExecutionId"]; ok {
 		workflowExecutionId = args["workflowExecutionId"].(string)
 	}
-	
-	stream, err := g.client.Sh(ctx, &pb.ShellRequest{
+
+	serverStream, err := g.client.Sh(ctx, &pb.ShellRequest{
 		Command:     cmd,
 		ContainerId: containerId,
 	})
@@ -83,19 +86,42 @@ func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}, st
 		return err
 	}
 
-	for {
-		resp, err := stream.Recv()
-		if err != nil {
-			return err
+	// Create a channel for event transfer
+	eventChannel := make(chan *pb.ShellResponse, 100)
+	var eg errgroup.Group
+
+	// Goroutine to receive events from server streaming
+	eg.Go(func() error {
+		defer close(eventChannel) // Close when server stream ends
+
+		for {
+			event, err := serverStream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				log.Printf("Error receiving event: %v", err)
+				return err
+			}
+			eventChannel <- event
 		}
-		if workflowExecutionId != "" {
-			err = streamClient.Send(workflowExecutionId, resp.Chunk)
+		return nil
+	})
+
+	 // Goroutine to send events to client streaming
+	 eg.Go(func() error {
+		for event := range eventChannel {
+			if err := streamClient.Send(workflowExecutionId, event.Chunk); err != nil {
+				log.Printf("Error sending event: %v", err)
+				return err
+			}
 		}
-		if err != nil {
-			return err
-		}
-		fmt.Println(resp.Chunk)
-	}
+
+		_, err = streamClient.CloseStream()
+		return err
+	})
+
+	return eg.Wait()
 }
 
 type ShellRPCServer struct {

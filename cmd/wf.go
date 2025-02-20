@@ -40,8 +40,7 @@ var (
 				"shell": &shell.ShellPlugin{},
 			}
 			
-			ctx := context.WithValue(context.Background(), "wfClient", wfClient)
-			ctx = context.WithValue(ctx, "temporalHostport", os.Getenv("TEMPORAL_HOSTPORT"))
+			ctx := context.WithValue(context.Background(), "temporalHostport", os.Getenv("TEMPORAL_HOSTPORT"))
 			
 			for name, plugin := range plugins {
 				err := pluginManager.Register(ctx, name, plugin)
