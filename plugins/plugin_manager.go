@@ -120,9 +120,13 @@ func (pm *PluginManager) Execute(pluginName string, methodName string, args map[
 	if len(results) == 0 {
 		return nil, nil
 	}
-	if len(results) == 1 {
+	err, isError := results[0].Interface().(error)
+	if len(results) == 1 && !isError {
 		return results[0].Interface(), nil
+	} else if len(results) == 1 {
+		return nil, err
 	}
+
 	if len(results) == 2 && results[1].IsNil() {
 		return results[0].Interface(), nil
 	} else if len(results) == 2 && !results[1].IsNil() {

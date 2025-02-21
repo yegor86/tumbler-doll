@@ -52,7 +52,9 @@ func GroovyDSLWorkflow(ctx workflow.Context, pipeline Pipeline, properties map[s
 	currentState = Running
 	for _, stage := range pipeline.Stages {
 		if err := stage.execute(ctx, variables, results); err != nil {
-			return nil, err
+			// return nil, err
+			logger.Error(err.Error())
+			break
 		}
 	}
 

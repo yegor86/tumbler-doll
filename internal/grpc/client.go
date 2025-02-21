@@ -32,11 +32,11 @@ func NewClient(hostPort string) (*GrpcClient, error) {
 	}, nil
 }
 
-func (c *GrpcClient) CloseStream() (*pb.LogResponse, error) {
-	return c.stream.CloseAndRecv()
-}
-
-func (c *GrpcClient) Close() error {
+func (c *GrpcClient) CloseStream() error {
+	err := c.stream.CloseSend()
+	if err != nil {
+		return err
+	}
 	return c.conn.Close()
 }
 

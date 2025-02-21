@@ -2,13 +2,13 @@ package workflow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 
 	"github.com/yegor86/tumbler-doll/plugins"
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 )
 
 type StageActivities struct {
@@ -41,7 +41,12 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		
 		pluginName, methodFunc, ok := pluginManager.GetPluginInfo(command)
 		if !ok {
-			return nil, errors.New(fmt.Sprintf("plugin is not registered for the command %s", command))
+			err := temporal.NewNonRetryableApplicationError(
+				"unexpected error", 
+				"plugin",
+				fmt.Errorf("plugin is not registered for the command %s", command),
+			)
+			return nil, err
 		}
 		
 		capitalizedCommand := strings.ToUpper(methodFunc[:1]) + strings.ToLower(methodFunc[1:])
@@ -53,10 +58,17 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
 			results = append(results, err.Error())
-			return results, err
+			return results, nil
+			// return results, temporal.NewNonRetryableApplicationError(
+			// 	"command execution failed", 
+			// 	"plugin",
+			// 	err,
+			// )
 		}
-		results = append(results, output.(string))
-		fmt.Printf("Command Output: %s\n", output)
+		invokeResult, ok := output.(string)
+		if ok {
+			results = append(results, invokeResult)
+		}
 	}
 
 	return results, nil

@@ -83,6 +83,8 @@ func (p *ShellPlugin) Stop() error {
 		return errors.New("shell plugin is not initialized")
 	}
 	p.pluginClient.Kill()
+	p.streamClient.CloseStream()
+	
 	return nil
 }
 
@@ -93,12 +95,10 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 	}
 }
 
-func (scmClient *ShellPlugin) Echo(args map[string]interface{}) string {
-	err := scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
-	return err.Error()
+func (scmClient *ShellPlugin) Echo(args map[string]interface{}) error {
+	return scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
 }
 
-func (scmClient *ShellPlugin) Sh(args map[string]interface{}) string {
-	err := scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
-	return err.Error()
+func (scmClient *ShellPlugin) Sh(args map[string]interface{}) error {
+	return scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
 }

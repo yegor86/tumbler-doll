@@ -38,6 +38,7 @@ func (s *GrpcServer) Stream(stream grpc.ClientStreamingServer[pb.LogRequest, pb.
 
 	for {
 		logEvent, err := stream.Recv()
+		
 		if err == io.EOF {
 			resp := &pb.LogResponse{
 				Status: "Done", // Client finished streaming
