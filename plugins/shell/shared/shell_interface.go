@@ -2,9 +2,6 @@ package shared
 
 import (
 	"context"
-	"io"
-	"log"
-	"time"
 
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
@@ -14,8 +11,8 @@ import (
 )
 
 type ClientShell interface {
-	Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error
-	Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error
+	Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) (grpc.ServerStreamingClient[pb.ShellResponse], error)
+	Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) (grpc.ServerStreamingClient[pb.ShellResponse], error)
 }
 
 type ServerShell interface {
@@ -28,7 +25,7 @@ type ShellRPCClient struct {
 	broker   *plugin.GRPCBroker
 }
 
-func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error {
+func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) (grpc.ServerStreamingClient[pb.ShellResponse], error) {
 	// err := g.client.Call("Plugin.Echo", args, reply)
 
 	cmd := "echo " + args["text"].(string)
@@ -36,78 +33,24 @@ func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}, 
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	workflowExecutionId := ""
-	if _, ok := args["workflowExecutionId"]; ok {
-		workflowExecutionId = args["workflowExecutionId"].(string)
-	}
-
-	serverStream, err := g.client.Echo(context.Background(), &pb.ShellRequest{
+	
+	return g.client.Echo(context.Background(), &pb.ShellRequest{
 		Command:     cmd,
 		ContainerId: containerId,
 	})
-	if err != nil {
-		return err
-	}
-
-	// Goroutine to receive events from server streaming
-	for {
-		event, err := serverStream.Recv()
-		time.Sleep(500 * time.Millisecond)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Printf("Error receiving event: %v", err)
-			return err
-		}
-		if workflowExecutionId == ""{
-			continue
-		}
-		if err := streamClient.Send(workflowExecutionId, event.Chunk); err != nil {
-			log.Printf("Error sending event: %v", err)
-		}
-	}
-	return err
 }
 
-func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) error {
+func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}, streamClient *stream.GrpcClient) (grpc.ServerStreamingClient[pb.ShellResponse], error) {
 	cmd := args["text"].(string)
 	containerId := ""
 	if _, ok := args["containerId"]; ok {
 		containerId = args["containerId"].(string)
 	}
-	workflowExecutionId := ""
-	if _, ok := args["workflowExecutionId"]; ok {
-		workflowExecutionId = args["workflowExecutionId"].(string)
-	}
 
-	serverStream, err := g.client.Sh(ctx, &pb.ShellRequest{
+	return g.client.Sh(ctx, &pb.ShellRequest{
 		Command:     cmd,
 		ContainerId: containerId,
 	})
-	if err != nil {
-		return err
-	}
-
-	// Goroutine to receive events from server streaming
-	for {
-		event, err := serverStream.Recv()
-		time.Sleep(500 * time.Millisecond)
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Printf("Error receiving event: %v", err)
-			return err
-		}
-		if workflowExecutionId == "" {
-			continue
-		}
-		if err := streamClient.Send(workflowExecutionId, event.Chunk); err != nil {
-			log.Printf("Error sending event: %v", err)
-		}
-	}
-	return err
 }
 
 type ShellRPCServer struct {

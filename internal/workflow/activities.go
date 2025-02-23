@@ -58,12 +58,11 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 		if err != nil {
 			log.Printf("Command execution failed: %s", err)
 			results = append(results, err.Error())
-			// return results, nil
-			// return results, temporal.NewNonRetryableApplicationError(
-			// 	"command execution failed",
-			// 	"plugin",
-			// 	err,
-			// )
+			return results, temporal.NewNonRetryableApplicationError(
+				"command execution failed",
+				"plugin",
+				err,
+			)
 		} else if invokeResult, ok := output.(string); ok {
 			results = append(results, invokeResult)
 		} else {

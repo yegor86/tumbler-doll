@@ -9,8 +9,12 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin"
-	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
 	"github.com/yegor86/tumbler-doll/internal/grpc"
+	"github.com/yegor86/tumbler-doll/plugins"
+	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
+
+	logstream "github.com/yegor86/tumbler-doll/internal/grpc/proto"
+	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
 )
 
 type ShellPlugin struct {
@@ -96,9 +100,37 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) error {
-	return scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
+	workflowExecutionId := ""
+	if _, ok := args["workflowExecutionId"]; ok {
+		workflowExecutionId = args["workflowExecutionId"].(string)
+	}
+
+	serverStream, err := scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
+	if err != nil {
+		return err
+	}
+	return plugins.Redirect(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
+		return &logstream.LogRequest{
+			Message: resp.Chunk,
+			WorkflowId: workflowExecutionId,
+		}
+	})
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) error {
-	return scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
+	workflowExecutionId := ""
+	if _, ok := args["workflowExecutionId"]; ok {
+		workflowExecutionId = args["workflowExecutionId"].(string)
+	}
+
+	serverStream, err := scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
+	if err != nil {
+		return err
+	}
+	return plugins.Redirect(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
+		return &logstream.LogRequest{
+			Message: resp.Chunk,
+			WorkflowId: workflowExecutionId,
+		}
+	})
 }

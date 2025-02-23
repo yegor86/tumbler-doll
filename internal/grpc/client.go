@@ -10,7 +10,7 @@ import (
 
 type GrpcClient struct {
 	conn   *grpc.ClientConn
-	stream grpc.ClientStreamingClient[pb.LogRequest, pb.LogResponse]
+	Stream grpc.ClientStreamingClient[pb.LogRequest, pb.LogResponse]
 }
 
 // hostPort: localhost:50051
@@ -28,12 +28,12 @@ func NewClient(hostPort string) (*GrpcClient, error) {
 
 	return &GrpcClient {
 		conn: conn,
-		stream: stream,
+		Stream: stream,
 	}, nil
 }
 
 func (c *GrpcClient) CloseStream() error {
-	err := c.stream.CloseSend()
+	err := c.Stream.CloseSend()
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func (c *GrpcClient) CloseStream() error {
 }
 
 func (c *GrpcClient) Send(workflowId string, msg string) error {
-	return c.stream.Send(&pb.LogRequest{
+	return c.Stream.Send(&pb.LogRequest{
 		WorkflowId: workflowId,
 		Message: msg,
 	})
