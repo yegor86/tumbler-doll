@@ -36,14 +36,12 @@ func (g *ShellPluginImpl) Sh(req *pb.ShellRequest, res grpc.ServerStreamingServe
 func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
 	g.logger.Info("[Shell] sh '%s'...", req.Command)
 	terms := strings.Fields(req.Command)
+	
 	cmd := exec.Command(terms[0], terms[1:]...)
-	
-	
-	inputStreamConsumer := func() (*bufio.Scanner, error) {
+	inputStreamConsumer, closeStreamConsumer := func() (*bufio.Scanner, error) {
 		stdout, err := cmd.StdoutPipe()
 		cmd.Stderr = cmd.Stdout
 		if err != nil {
-			g.logger.Error("[Shell] Plugin error %v", err)
 			return nil, err
 		}
 		if err = cmd.Start(); err != nil {
@@ -51,11 +49,13 @@ func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreami
 		}
 		scanner := bufio.NewScanner(stdout)
 		return scanner, nil
+	}, func() error {
+		return cmd.Wait()
 	}
 	
 	if (req.ContainerId != "") {
 		var attachResp *types.HijackedResponse = nil
-		inputStreamConsumer = func() (*bufio.Scanner, error) {
+		inputStreamConsumer, closeStreamConsumer = func() (*bufio.Scanner, error) {
 			var err error
 			attachResp, err = workflow.ExecContainer(context.Background(), req.ContainerId, terms)
 
@@ -63,23 +63,25 @@ func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreami
 				return nil, fmt.Errorf("error attaching to container %s: %v", req.ContainerId, err)
 			}
 			return bufio.NewScanner(attachResp.Reader), nil
-		}
-		if attachResp != nil {
-			defer attachResp.Close()
+		}, func() error {
+			attachResp.Close()
+			return nil
 		}
 	}
+	defer closeStreamConsumer()
 
 	inStream, err := inputStreamConsumer()
 	if err != nil {
+		g.logger.Error("[Shell] Plugin.inputStreamConsumer error %v", err)
 		return err
 	}
 
 	err = g.readAndSendBack(inStream, res)
 	if err != nil {
-		return err
+		g.logger.Error("[Shell] Plugin.readAndSendBack error %v", err)
 	}
 
-	return cmd.Wait()
+	return err
 }
 
 func (g *ShellPluginImpl) readAndSendBack(scanner *bufio.Scanner, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
