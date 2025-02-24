@@ -87,9 +87,7 @@ func (p *ShellPlugin) Stop() error {
 		return errors.New("shell plugin is not initialized")
 	}
 	p.pluginClient.Kill()
-	p.streamClient.CloseStream()
-	
-	return nil
+	return p.streamClient.CloseStream()
 }
 
 func (p *ShellPlugin) ListMethods() map[string]string {
