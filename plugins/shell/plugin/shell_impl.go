@@ -47,8 +47,7 @@ func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreami
 		if err = cmd.Start(); err != nil {
 			return nil, err
 		}
-		scanner := bufio.NewScanner(stdout)
-		return scanner, nil
+		return bufio.NewScanner(stdout), nil
 	}, func() error {
 		return cmd.Wait()
 	}
@@ -68,13 +67,13 @@ func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreami
 			return nil
 		}
 	}
-	defer closeStreamConsumer()
-
+	
 	inStream, err := inputStreamConsumer()
 	if err != nil {
 		g.logger.Error("[Shell] Plugin.inputStreamConsumer error %v", err)
 		return err
 	}
+	defer closeStreamConsumer()
 
 	err = g.readAndSendBack(inStream, res)
 	if err != nil {

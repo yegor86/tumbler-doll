@@ -100,16 +100,16 @@ func (p *ShellPlugin) ListMethods() map[string]string {
 }
 
 func (scmClient *ShellPlugin) Echo(args map[string]interface{}) error {
-	workflowExecutionId := ""
-	if _, ok := args["workflowExecutionId"]; ok {
-		workflowExecutionId = args["workflowExecutionId"].(string)
+	workflowExecutionId, ok := args["workflowExecutionId"].(string)
+	if !ok {
+		return errors.New("unable to redirect ShellPlugin.Echo output. 'workflowExecutionId' not found")
 	}
 
 	serverStream, err := scmClient.shell.Echo(scmClient.ctx, args)
 	if err != nil {
 		return err
 	}
-	return plugins.Redirect(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
+	return plugins.RedirectGrpcToGrpc(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
 		return &logstream.LogRequest{
 			Message: resp.Chunk,
 			WorkflowId: workflowExecutionId,
@@ -118,16 +118,16 @@ func (scmClient *ShellPlugin) Echo(args map[string]interface{}) error {
 }
 
 func (scmClient *ShellPlugin) Sh(args map[string]interface{}) error {
-	workflowExecutionId := ""
-	if _, ok := args["workflowExecutionId"]; ok {
-		workflowExecutionId = args["workflowExecutionId"].(string)
+	workflowExecutionId, ok := args["workflowExecutionId"].(string)
+	if !ok {
+		return errors.New("unable to redirect ShellPlugin.Sh output. 'workflowExecutionId' not found")
 	}
 
 	serverStream, err := scmClient.shell.Sh(scmClient.ctx, args)
 	if err != nil {
 		return err
 	}
-	return plugins.Redirect(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
+	return plugins.RedirectGrpcToGrpc(serverStream, scmClient.streamClient.Stream, func(resp *pb.ShellResponse) *logstream.LogRequest {
 		return &logstream.LogRequest{
 			Message: resp.Chunk,
 			WorkflowId: workflowExecutionId,
