@@ -105,7 +105,7 @@ func (scmClient *ShellPlugin) Echo(args map[string]interface{}) error {
 		workflowExecutionId = args["workflowExecutionId"].(string)
 	}
 
-	serverStream, err := scmClient.shell.Echo(scmClient.ctx, args, scmClient.streamClient)
+	serverStream, err := scmClient.shell.Echo(scmClient.ctx, args)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (scmClient *ShellPlugin) Sh(args map[string]interface{}) error {
 		workflowExecutionId = args["workflowExecutionId"].(string)
 	}
 
-	serverStream, err := scmClient.shell.Sh(scmClient.ctx, args, scmClient.streamClient)
+	serverStream, err := scmClient.shell.Sh(scmClient.ctx, args)
 	if err != nil {
 		return err
 	}

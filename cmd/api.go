@@ -49,7 +49,7 @@ var (
 			router.Get("/jobs/*", handler.ListJobs("/"))
 			router.Post("/submit/*", handler.SubmitJob(wfClient))
 			router.Post("/uploadfile", handler.UploadFile(wfClient))
-			router.HandleFunc("/stream/*", handler.StreamLogs(wfClient))
+			router.HandleFunc("/stream/*", handler.ReadLogs(wfClient))
 
 			var wg sync.WaitGroup
         	wg.Add(2)
@@ -70,7 +70,7 @@ var (
 			grpcServer := grpc.NewServer()
 			go func() {
 				defer wg.Done()
-				if err := grpcServer.ListenAndServe(); err != nil {
+				if err := grpcServer.ListenAndServe(handler.WriteLogs); err != nil {
 					log.Fatalf("GRPC server error: %v", err)
 				}
 			}()
