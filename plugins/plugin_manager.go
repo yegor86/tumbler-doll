@@ -86,6 +86,14 @@ func (pm *PluginManager) UnregisterAll() error {
 	return err
 }
 
+func (pm *PluginManager) FindPlugin(pluginName string) Plugin {
+	plugin, exists := pm.plugins[pluginName]
+	if !exists {
+		return nil
+	}
+	return plugin
+}
+
 // GetPluginInfo returns (pluginName, functionName)
 func (pm *PluginManager) GetPluginInfo(methodName string) (string, string, bool) {
 	if info, ok := pm.methodToInfo[methodName]; ok {

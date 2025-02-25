@@ -18,17 +18,13 @@ type DockerPlugin struct {
 	ctx context.Context
 }
 
-var (
-	dockerClientVersion string = "1.46"
-)
-
 func (p *DockerPlugin) Start(ctx context.Context) error {
 	temporalHostPort, ok := ctx.Value("temporalHostport").(string)
 	if !ok {
 		return fmt.Errorf("failed to extract TEMPORAL_ADDRESS from context: %v", ctx.Value("temporalHostport"))
 	}
 
-	dockerClient, err := shared.NewDockerClient(ctx, dockerClientVersion)
+	dockerClient, err := shared.NewDockerClient(ctx)
 	if err != nil {
 		return err
 	}
@@ -56,13 +52,13 @@ func (p *DockerPlugin) ListMethods() map[string]string {
 	return map[string]string{}
 }
 
-func (p *DockerPlugin) Pull(args map[string]interface{}) error {
-	workflowExecutionId, ok := args["workflowExecutionId"].(string)
+func (p *DockerPlugin) Pull(ctx context.Context) error {
+	workflowExecutionId, ok := ctx.Value("workflowExecutionId").(string)
 	if !ok {
 		return errors.New("unable to redirect DockerPlugin.Pull output. 'workflowExecutionId' not found")
 	}
 
-	imageName, ok := args["imageName"].(string)
+	imageName, ok := ctx.Value("imageName").(string)
 	if !ok {
 		return fmt.Errorf("docker image type is wrong %v", imageName)
 	}
@@ -77,4 +73,16 @@ func (p *DockerPlugin) Pull(args map[string]interface{}) error {
 			WorkflowId: workflowExecutionId,
 		}
 	})
+}
+
+func (p *DockerPlugin) RunContainer(ctx context.Context) (shared.ContainerId, error) {
+	imageName, ok := ctx.Value("imageName").(string)
+	if !ok {
+		return shared.ContainerId(""), fmt.Errorf("docker image type is wrong %v", imageName)
+	}
+	return p.dockerClient.RunContainer(ctx, imageName)
+}
+
+func (p *DockerPlugin) StopContainer(ctx context.Context, containerId shared.ContainerId) error {
+	return p.dockerClient.StopContainer(ctx, containerId)
 }

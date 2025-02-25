@@ -16,13 +16,14 @@ import (
 	"google.golang.org/grpc"
 	"github.com/docker/docker/api/types"
 
-	"github.com/yegor86/tumbler-doll/internal/workflow"
-	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
+	docker "github.com/yegor86/tumbler-doll/plugins/docker/shared"
 	"github.com/yegor86/tumbler-doll/plugins/shell/shared"
+	pb "github.com/yegor86/tumbler-doll/plugins/shell/proto"
 )
 
 type ShellPluginImpl struct {
 	logger hclog.Logger
+	docker docker.DockerClient
 }
 
 func (g *ShellPluginImpl) Echo(req *pb.ShellRequest, res grpc.ServerStreamingServer[pb.ShellResponse]) error {
@@ -56,7 +57,7 @@ func (g *ShellPluginImpl) execShell(req *pb.ShellRequest, res grpc.ServerStreami
 		var attachResp *types.HijackedResponse = nil
 		inputStreamConsumer, closeStreamConsumer = func() (*bufio.Scanner, error) {
 			var err error
-			attachResp, err = workflow.ExecContainer(context.Background(), req.ContainerId, terms)
+			attachResp, err = g.docker.ExecContainer(context.Background(), req.ContainerId, terms)
 
 			if err != nil {
 				return nil, fmt.Errorf("error attaching to container %s: %v", req.ContainerId, err)
@@ -119,7 +120,14 @@ func main() {
 		JSONFormat: true,
 	})
 
+	dockerClient, err := docker.NewDockerClient(context.Background())
+	if err != nil {
+		logger.Warn("error initializing docker client %v", err)
+	}
+	defer dockerClient.Stop()
+
 	shellImpl := &ShellPluginImpl{
+		docker: dockerClient,
 		logger: logger,
 	}
 

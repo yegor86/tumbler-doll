@@ -14,6 +14,7 @@ import (
 
 	"github.com/yegor86/tumbler-doll/internal/workflow"
 	"github.com/yegor86/tumbler-doll/plugins"
+	"github.com/yegor86/tumbler-doll/plugins/docker"
 	"github.com/yegor86/tumbler-doll/plugins/scm"
 	"github.com/yegor86/tumbler-doll/plugins/shell"
 )
@@ -38,6 +39,7 @@ var (
 			plugins := map[string]plugins.Plugin{
 				"scm":   &scm.ScmPlugin{},
 				"shell": &shell.ShellPlugin{},
+				"docker": &docker.DockerPlugin{},
 			}
 			
 			ctx := context.WithValue(context.Background(), "temporalHostport", os.Getenv("TEMPORAL_HOSTPORT"))

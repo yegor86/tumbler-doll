@@ -7,37 +7,45 @@ import (
 	"strings"
 
 	"github.com/yegor86/tumbler-doll/plugins"
+	"github.com/yegor86/tumbler-doll/plugins/docker"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
 )
+
+type WorkflowExecutionID string
 
 type StageActivities struct {
 }
 
 func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agent Agent) ([]string, error) {
 	var results []string
-	var dockerContainer *DockerContainer = nil
-	var err error
 
-	if agent.Docker != nil && agent.Docker.Image != "" {
-		dockerContainer, err = NewDockerContainer(ctx, string(agent.Docker.Image))
-		if err != nil {
-			return results, err
-		}
-		defer dockerContainer.StopContainer(ctx, string(agent.Docker.Image))
-	}
-
-	// Get workflow information to send signals
+	// Get workflow information
 	info := activity.GetInfo(ctx)
+	ctx = context.WithValue(ctx, WorkflowExecutionID("workflowExecutionId"), info.WorkflowExecution.ID)
 
 	pluginManager := plugins.GetInstance()
+	
+	dockerPlugin, found := pluginManager.FindPlugin("docker").(*docker.DockerPlugin)
+	if agent.Docker != nil && agent.Docker.Image != "" && found {
+		ctx = context.WithValue(ctx, "imageName", string(agent.Docker.Image))
+		err := dockerPlugin.Pull(ctx)
+		if err != nil {
+			log.Printf("Docker pull image failed: %v\n", err)
+			return results, err
+		}
+		containerId, err := dockerPlugin.RunContainer(ctx)
+		if err != nil {
+			log.Printf("Docker run container failed: %v\n", err)
+			return results, err
+		}
+		ctx = context.WithValue(ctx, "containerId", containerId)
+		
+		defer dockerPlugin.StopContainer(ctx, containerId)
+	}
+
 	for _, step := range steps {
 		command, params := step.ToCommand()
-
-		params["workflowExecutionId"] = info.WorkflowExecution.ID
-		if dockerContainer != nil {
-			params["containerId"] = dockerContainer.ContainerId
-		}
 
 		pluginName, methodFunc, ok := pluginManager.GetPluginInfo(command)
 		if !ok {

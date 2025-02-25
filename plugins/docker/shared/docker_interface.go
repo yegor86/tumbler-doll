@@ -27,7 +27,11 @@ type DockerClientImpl struct {
 	docker *dockerClient.Client
 }
 
-func NewDockerClient(ctx context.Context, dockerClientVersion string) (DockerClient, error) {
+var (
+	dockerClientVersion string = "1.46"
+)
+
+func NewDockerClient(ctx context.Context) (DockerClient, error) {
 
 	// Create a Docker client
 	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion(dockerClientVersion))
@@ -67,7 +71,13 @@ func (p *DockerClientImpl) RunContainer(ctx context.Context, imageName string) (
 
 // ExecContainer: same as `docker exec`
 func (p *DockerClientImpl) ExecContainer(ctx context.Context, containerId string, cmd []string) (*types.HijackedResponse, error) {
-	execResp, err := p.docker.ContainerExecCreate(ctx, containerId, container.ExecOptions{
+	docker, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion(dockerClientVersion))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Docker client: %w", err)
+	}
+	defer docker.Close()
+	
+	execResp, err := docker.ContainerExecCreate(ctx, containerId, container.ExecOptions{
 		Cmd:          cmd,
 		AttachStdout: true,
 		AttachStderr: true,
@@ -77,7 +87,7 @@ func (p *DockerClientImpl) ExecContainer(ctx context.Context, containerId string
 	}
 
 	// Start the command execution
-	execAttachResp, err := p.docker.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{})
+	execAttachResp, err := docker.ContainerExecAttach(ctx, execResp.ID, container.ExecStartOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to start exec instance for command '%v': %w", cmd, err)
 	}
