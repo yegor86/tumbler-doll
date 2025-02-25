@@ -13,13 +13,13 @@ import (
 	dockerClient "github.com/docker/docker/client"
 )
 
-type ContainerId string
+// type ContainerId string
 
 type DockerClient interface {
 	Pull(ctx context.Context, imageName string) (io.ReadCloser, error)
-	RunContainer(ctx context.Context, imageName string) (ContainerId, error)
+	RunContainer(ctx context.Context, imageName string) (string, error)
 	ExecContainer(ctx context.Context, containerId string, cmd []string) (*types.HijackedResponse, error)
-	StopContainer(ctx context.Context, containerId ContainerId) error
+	StopContainer(ctx context.Context, containerId string) error
 	Stop() error
 }
 
@@ -49,7 +49,7 @@ func (p *DockerClientImpl) Pull(ctx context.Context, imageName string) (io.ReadC
 }
 
 // RunContainer: same as `docker run`
-func (p *DockerClientImpl) RunContainer(ctx context.Context, imageName string) (ContainerId, error) {
+func (p *DockerClientImpl) RunContainer(ctx context.Context, imageName string) (string, error) {
 
 	// Create the container
 	resp, err := p.docker.ContainerCreate(ctx, &container.Config{
@@ -58,15 +58,15 @@ func (p *DockerClientImpl) RunContainer(ctx context.Context, imageName string) (
 		Tty:        true,
 	}, &container.HostConfig{}, &network.NetworkingConfig{}, nil, "")
 	if err != nil {
-		return ContainerId(""), fmt.Errorf("failed to create Docker container: %w", err)
+		return "", fmt.Errorf("failed to create Docker container: %w", err)
 	}
 
 	// Start the container
 	if err := p.docker.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
-		return ContainerId(""), fmt.Errorf("failed to start Docker container: %w", err)
+		return "", fmt.Errorf("failed to start Docker container: %w", err)
 	}
 
-	return ContainerId(resp.ID), nil
+	return resp.ID, nil
 }
 
 // ExecContainer: same as `docker exec`
@@ -94,7 +94,7 @@ func (p *DockerClientImpl) ExecContainer(ctx context.Context, containerId string
 	return &execAttachResp, nil
 }
 
-func (p *DockerClientImpl) StopContainer(ctx context.Context, containerId ContainerId) error {
+func (p *DockerClientImpl) StopContainer(ctx context.Context, containerId string) error {
 	// Stop and remove the container after all commands are executed
 	if err := p.docker.ContainerStop(ctx, string(containerId), container.StopOptions{}); err != nil {
 		return err

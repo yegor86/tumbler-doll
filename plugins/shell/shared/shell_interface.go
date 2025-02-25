@@ -27,10 +27,7 @@ type ShellRPCClient struct {
 func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) (grpc.ServerStreamingClient[pb.ShellResponse], error) {
 
 	cmd := "echo " + args["text"].(string)
-	containerId := ""
-	if _, ok := args["containerId"]; ok {
-		containerId = args["containerId"].(string)
-	}
+	containerId, _ := args["containerId"].(string)
 	
 	return g.client.Echo(context.Background(), &pb.ShellRequest{
 		Command:     cmd,
@@ -40,10 +37,7 @@ func (g *ShellRPCClient) Echo(ctx context.Context, args map[string]interface{}) 
 
 func (g *ShellRPCClient) Sh(ctx context.Context, args map[string]interface{}) (grpc.ServerStreamingClient[pb.ShellResponse], error) {
 	cmd := args["text"].(string)
-	containerId := ""
-	if _, ok := args["containerId"]; ok {
-		containerId = args["containerId"].(string)
-	}
+	containerId, _ := args["containerId"].(string)
 
 	return g.client.Sh(ctx, &pb.ShellRequest{
 		Command:     cmd,

@@ -12,8 +12,6 @@ import (
 	"go.temporal.io/sdk/temporal"
 )
 
-type WorkflowExecutionID string
-
 type StageActivities struct {
 }
 
@@ -22,7 +20,7 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 
 	// Get workflow information
 	info := activity.GetInfo(ctx)
-	ctx = context.WithValue(ctx, WorkflowExecutionID("workflowExecutionId"), info.WorkflowExecution.ID)
+	ctx = context.WithValue(ctx, "workflowExecutionId", info.WorkflowExecution.ID)
 
 	pluginManager := plugins.GetInstance()
 	
@@ -46,6 +44,8 @@ func (a *StageActivities) StageActivity(ctx context.Context, steps []*Step, agen
 
 	for _, step := range steps {
 		command, params := step.ToCommand()
+		params["workflowExecutionId"] = info.WorkflowExecution.ID
+		params["containerId"] = ctx.Value("containerId")
 
 		pluginName, methodFunc, ok := pluginManager.GetPluginInfo(command)
 		if !ok {

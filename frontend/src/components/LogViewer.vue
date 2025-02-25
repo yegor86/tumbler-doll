@@ -28,7 +28,8 @@
         
         const eventSource = apiService.streamJobExec(this.$route.fullPath, event.WorkflowID);
         eventSource.onmessage = (event) => {
-          this.logs += this.ansi.ansi_to_html(event.data).replace(/\n/gm, '<br>') + "\n";
+          // this.logs += this.ansi.ansi_to_html(event.data).replace(/\n/gm, '<br>') + "\n";
+          this.logs += event.data + "\n";
         };
     
         eventSource.onerror = (error) => {

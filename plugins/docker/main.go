@@ -75,14 +75,14 @@ func (p *DockerPlugin) Pull(ctx context.Context) error {
 	})
 }
 
-func (p *DockerPlugin) RunContainer(ctx context.Context) (shared.ContainerId, error) {
+func (p *DockerPlugin) RunContainer(ctx context.Context) (string, error) {
 	imageName, ok := ctx.Value("imageName").(string)
 	if !ok {
-		return shared.ContainerId(""), fmt.Errorf("docker image type is wrong %v", imageName)
+		return "", fmt.Errorf("docker image type is wrong %v", imageName)
 	}
 	return p.dockerClient.RunContainer(ctx, imageName)
 }
 
-func (p *DockerPlugin) StopContainer(ctx context.Context, containerId shared.ContainerId) error {
+func (p *DockerPlugin) StopContainer(ctx context.Context, containerId string) error {
 	return p.dockerClient.StopContainer(ctx, containerId)
 }
